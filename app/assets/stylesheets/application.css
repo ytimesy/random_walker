@@ -13,3 +13,85 @@
  *= require_tree .
  *= require_self
  */
+
+.walker-container {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  display: grid;
+  gap: 1.5rem;
+}
+
+.walker-controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.walker-controls button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+}
+
+.walker-controls button:disabled {
+  cursor: not-allowed;
+  background: #d1d5db;
+  box-shadow: none;
+}
+
+.walker-controls button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.35);
+}
+
+.walker-status {
+  min-height: 1.5rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.walker-status.is-success {
+  color: #16a34a;
+}
+
+.walker-frame {
+  width: 100%;
+  min-height: 480px;
+  border: none;
+  border-radius: 8px;
+  background-color: #111827;
+}
+
+.walker-history {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.walker-history h2 {
+  margin-top: 0;
+  font-size: 1.125rem;
+}
+
+.walker-history-list-item {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  word-break: break-all;
+  margin-bottom: 0.5rem;
+}
+
+.walker-history-list-item.is-current {
+  color: #2563eb;
+  font-weight: 600;
+}

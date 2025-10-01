@@ -1,0 +1,22 @@
+<div class="walker-container">
+  <h1>Random Walker</h1>
+
+  <div class="walker-controls">
+    <button type="button" id="walker-next">Random step</button>
+    <button type="button" id="walker-back" disabled>Back</button>
+  </div>
+
+  <p id="walker-status" class="walker-status" role="status" aria-live="polite"></p>
+
+  <iframe
+    src="<%= @initial_url %>"
+    title="Current site"
+    class="walker-frame"
+    id="walker-frame"
+  ></iframe>
+
+  <section class="walker-history" aria-label="Visited URLs">
+    <h2>History</h2>
+    <ol id="walker-history-list"></ol>
+  </section>
+</div>
