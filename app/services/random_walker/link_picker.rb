@@ -8,6 +8,8 @@ module RandomWalker
   class LinkPicker
     class Error < StandardError; end
 
+    Link = Data.define(:url, :label)
+
     USER_AGENT = "RandomWalkerBot/1.0 (+https://example.com)".freeze
     OPEN_TIMEOUT = 5
     READ_TIMEOUT = 5
@@ -19,10 +21,14 @@ module RandomWalker
     end
 
     def next_url
+      next_link.url
+    end
+
+    def next_link
       links = extract_links
       raise Error, "No navigable links found" if links.empty?
 
-      links.sample(random: @rng).to_s
+      links.sample(random: @rng)
     end
 
     private
@@ -34,9 +40,12 @@ module RandomWalker
       base_href = document.at("base[href]")&.[]("href")
       base = absolutize(base_href) if base_href
       candidates = document.css("a[href]").filter_map do |node|
-        absolutize(node["href"], base)
+        absolute = absolutize(node["href"], base)
+        next unless absolute
+
+        Link.new(url: absolute.to_s, label: link_label(node))
       end
-      candidates.uniq
+      candidates.uniq { |link| link.url }
     end
 
     def fetch_document
@@ -69,6 +78,16 @@ module RandomWalker
       return nil unless candidate.is_a?(URI::HTTP) || candidate.is_a?(URI::HTTPS)
 
       candidate
+    end
+
+    def link_label(node)
+      text = node.text.to_s.gsub(/\s+/, " ").strip
+      return text unless text.empty?
+
+      title = node["title"].to_s.strip
+      return title unless title.empty?
+
+      nil
     end
 
     def parse_source_url(raw)

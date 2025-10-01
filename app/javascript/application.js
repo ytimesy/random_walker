@@ -1,6 +1,6 @@
 const walkButtonLabel = {
   idle: "Random step",
-  loading: "Walking…"
+  loading: "Walking..."
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,13 +25,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const renderHistory = () => {
     historyList.innerHTML = "";
 
-    history.forEach((url, index) => {
+    history.forEach((entry, index) => {
       const item = document.createElement("li");
       item.className = "walker-history-list-item";
       if (index === position) {
         item.classList.add("is-current");
       }
-      item.textContent = url;
+
+      const anchor = document.createElement("a");
+      anchor.href = entry.url;
+      anchor.textContent = entry.label || entry.url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+
+      item.appendChild(anchor);
       historyList.appendChild(item);
     });
   };
@@ -40,20 +47,43 @@ document.addEventListener("DOMContentLoaded", () => {
     backButton.disabled = position <= 0;
   };
 
-  const navigateTo = (url, { pushHistory = true } = {}) => {
+  const normalizeEntry = ({ url, label }) => {
+    if (!url) {
+      throw new Error("Missing URL.");
+    }
+
+    const normalizedUrl = new URL(url).toString();
+    const trimmedLabel = label ? label.replace(/\s+/g, " ").trim() : "";
+    const finalLabel = trimmedLabel || normalizedUrl;
+
+    return { url: normalizedUrl, label: finalLabel };
+  };
+
+  const showCurrentEntry = () => {
+    if (position < 0 || position >= history.length) {
+      return;
+    }
+
+    frame.src = history[position].url;
+    renderHistory();
+    updateControls();
+  };
+
+  const pushEntry = (entry) => {
+    history.splice(position + 1);
+    history.push(entry);
+    position = history.length - 1;
+  };
+
+  const navigateTo = (entryData, { pushHistory = true } = {}) => {
     try {
-      const normalized = new URL(url).toString();
+      const entry = normalizeEntry(entryData);
 
       if (pushHistory) {
-        history.splice(position + 1);
-        history.push(normalized);
-        position = history.length - 1;
+        pushEntry(entry);
       }
 
-      frame.src = normalized;
-      renderHistory();
-      updateControls();
-      setStatus();
+      showCurrentEntry();
     } catch (error) {
       setStatus("Received an invalid URL.");
     }
@@ -103,7 +133,13 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error("No URL returned by server.");
       }
 
-      navigateTo(payload.url, { pushHistory: true });
+      navigateTo(
+        {
+          url: payload.url,
+          label: payload.label
+        },
+        { pushHistory: true }
+      );
       setStatus("Found a new page!", { success: true });
     } catch (error) {
       setStatus(error.message || "Failed to fetch next page.");
@@ -118,18 +154,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     position -= 1;
-    frame.src = history[position];
-    renderHistory();
-    updateControls();
+    showCurrentEntry();
     setStatus("Returned to a previous page.", { success: true });
   });
 
   const initial = frame.getAttribute("src");
   if (initial) {
-    history.push(initial);
-    position = history.length - 1;
-    renderHistory();
-    updateControls();
+    try {
+      pushEntry(normalizeEntry({ url: initial }));
+      showCurrentEntry();
+    } catch (error) {
+      setStatus("Failed to initialize walker.");
+    }
   }
 
   nextButton.textContent = walkButtonLabel.idle;

@@ -15,7 +15,9 @@ module RandomWalker
       HTML
 
       picker = build_picker(html)
-      assert_equal "https://example.org/page1", picker.next_url
+      link = picker.next_link
+      assert_equal "https://example.org/page1", link.url
+      assert_equal "Link", link.label
     end
 
     test "resolves relative links" do
@@ -26,7 +28,7 @@ module RandomWalker
       HTML
 
       picker = build_picker(html, url: "https://example.com/dir/page")
-      assert_equal "https://example.com/relative", picker.next_url
+      assert_equal "https://example.com/relative", picker.next_link.url
     end
 
     test "uses base href when present" do
@@ -37,7 +39,9 @@ module RandomWalker
       HTML
 
       picker = build_picker(html, url: "https://example.com/")
-      assert_equal "https://docs.example.com/guide", picker.next_url
+      link = picker.next_link
+      assert_equal "https://docs.example.com/guide", link.url
+      assert_equal "Guide", link.label
     end
 
     test "ignores non http links" do
@@ -49,7 +53,7 @@ module RandomWalker
       HTML
 
       picker = build_picker(html)
-      assert_raises(RandomWalker::LinkPicker::Error) { picker.next_url }
+      assert_raises(RandomWalker::LinkPicker::Error) { picker.next_link }
     end
 
     test "raises when fetch fails" do
@@ -61,7 +65,7 @@ module RandomWalker
         rng: Random.new(1)
       )
 
-      error = assert_raises(RandomWalker::LinkPicker::Error) { picker.next_url }
+      error = assert_raises(RandomWalker::LinkPicker::Error) { picker.next_link }
       assert_match(/Failed to fetch/, error.message)
     end
 
@@ -69,6 +73,28 @@ module RandomWalker
       assert_raises(RandomWalker::LinkPicker::Error) do
         RandomWalker::LinkPicker.new(url: "ftp://example.com")
       end
+    end
+
+    test "derives label from title when text missing" do
+      html = <<~HTML
+        <html><body>
+          <a href="/docs" title="Docs home"><span></span></a>
+        </body></html>
+      HTML
+
+      picker = build_picker(html)
+      assert_equal "Docs home", picker.next_link.label
+    end
+
+    test "returns nil label when nothing available" do
+      html = <<~HTML
+        <html><body>
+          <a href="/docs"><img src="/img" alt="" /></a>
+        </body></html>
+      HTML
+
+      picker = build_picker(html)
+      assert_nil picker.next_link.label
     end
   end
 end

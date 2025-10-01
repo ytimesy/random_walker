@@ -3,17 +3,20 @@ require "ostruct"
 
 class WalksControllerTest < ActionDispatch::IntegrationTest
   test "returns next url as json" do
-    RandomWalker::LinkPicker.any_instance.stub(:next_url, "https://example.org") do
+    link = RandomWalker::LinkPicker::Link.new(url: "https://example.org", label: "Example")
+
+    RandomWalker::LinkPicker.any_instance.stub(:next_link, link) do
       get walk_url(format: :json), params: { url: "https://example.com" }
     end
 
     assert_response :success
     body = JSON.parse(response.body)
     assert_equal "https://example.org", body["url"]
+    assert_equal "Example", body["label"]
   end
 
   test "returns error when picker fails" do
-    RandomWalker::LinkPicker.any_instance.stub(:next_url, proc { raise RandomWalker::LinkPicker::Error.new("no links") }) do
+    RandomWalker::LinkPicker.any_instance.stub(:next_link, proc { raise RandomWalker::LinkPicker::Error.new("no links") }) do
       get walk_url(format: :json), params: { url: "https://example.com" }
     end
 
@@ -27,7 +30,7 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
     Rails.application.config.random_walker[:initial_url] = "https://initial.example.com"
 
     begin
-      RandomWalker::LinkPicker.stub(:new, ->(url:) { OpenStruct.new(next_url: url) }) do
+      RandomWalker::LinkPicker.stub(:new, ->(url:) { OpenStruct.new(next_link: RandomWalker::LinkPicker::Link.new(url: url, label: nil)) }) do
         get walk_url(format: :json), params: { url: "" }
       end
 
