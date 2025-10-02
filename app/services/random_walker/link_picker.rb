@@ -152,7 +152,7 @@ module RandomWalker
 
       case response
       when Net::HTTPSuccess
-        [response.body, uri]
+        [ response.body, uri ]
       when Net::HTTPRedirection
         location = response["location"]
         raise Error, "Redirect without location" unless location
@@ -193,9 +193,9 @@ module RandomWalker
       case raw
       when Array
         body, uri = raw
-        [body, coerce_uri(uri) || source_url]
+        [ body, coerce_uri(uri) || source_url ]
       else
-        [raw, source_url]
+        [ raw, source_url ]
       end
     end
 

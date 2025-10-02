@@ -9,7 +9,7 @@ module RandomWalker
     end
 
     def with_target_stub(picker, html:, final_url: nil, &block)
-      picker.stub(:fetch_target_page, ->(url) { [html, URI.parse(final_url || url)] }, &block)
+      picker.stub(:fetch_target_page, ->(url) { [ html, URI.parse(final_url || url) ] }, &block)
     end
 
     test "returns link from document" do
@@ -195,7 +195,7 @@ module RandomWalker
         if url.include?("bad")
           raise RandomWalker::LinkPicker::Error, "broken"
         else
-          ["<html><body>ok</body></html>", URI.parse(url)]
+          [ "<html><body>ok</body></html>", URI.parse(url) ]
         end
       end
 

@@ -48,5 +48,5 @@ group :test do
 
   gem "httparty"
   gem "nokogiri"
-  gem "dotenv-rails", groups: %i[development]
+  gem "dotenv-rails", groups: %i[ development ]
 end
