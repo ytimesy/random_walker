@@ -6,13 +6,33 @@
     <button type="button" id="walker-back" disabled>Back</button>
   </div>
 
-  <p id="walker-status" class="walker-status" role="status" aria-live="polite"></p>
+  <form id="walker-start-form" class="walker-start" autocomplete="off">
+    <label for="walker-start-url">Start from this URL</label>
+    <div class="walker-start-fields">
+      <input
+        type="url"
+        id="walker-start-url"
+        name="start_url"
+        placeholder="https://example.com"
+        value="<%= @initial_url %>"
+        required
+        inputmode="url"
+      >
+      <button type="submit">Set</button>
+    </div>
+  </form>
+
+  <p id="walker-status" class="walker-status" role="status" aria-live="polite">
+    Press "Random step" to begin wandering.
+  </p>
 
   <iframe
-    src="<%= @initial_url %>"
+    src="about:blank"
     title="Current site"
     class="walker-frame"
     id="walker-frame"
+    sandbox="allow-popups allow-popups-to-escape-sandbox"
+    data-default-url="<%= @initial_url %>"
   ></iframe>
 
   <section class="walker-history" aria-label="Visited URLs">

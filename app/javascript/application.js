@@ -9,17 +9,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const backButton = document.getElementById("walker-back");
   const status = document.getElementById("walker-status");
   const historyList = document.getElementById("walker-history-list");
+  const startForm = document.getElementById("walker-start-form");
+  const startInput = document.getElementById("walker-start-url");
+  let defaultUrl = frame?.dataset?.defaultUrl || null;
 
   if (!frame || !nextButton || !backButton || !historyList || !status) {
     return;
   }
 
+  frame.removeAttribute("src");
+  frame.srcdoc = "";
+
   const history = [];
   let position = -1;
 
-  const setStatus = (message = "", { success = false } = {}) => {
+  const setStatus = (message = "", { type = null } = {}) => {
     status.textContent = message;
-    status.classList.toggle("is-success", !!message && success);
+    status.classList.remove("is-success", "is-error");
+
+    if (!message) {
+      return;
+    }
+
+    if (type === "success") {
+      status.classList.add("is-success");
+    } else if (type === "error") {
+      status.classList.add("is-error");
+    }
   };
 
   const renderHistory = () => {
@@ -47,7 +63,16 @@ document.addEventListener("DOMContentLoaded", () => {
     backButton.disabled = position <= 0;
   };
 
-  const normalizeEntry = ({ url, label }) => {
+  const clearHistory = () => {
+    history.length = 0;
+    position = -1;
+    frame.removeAttribute("src");
+    frame.srcdoc = "";
+    renderHistory();
+    updateControls();
+  };
+
+  const normalizeEntry = ({ url, label, html }) => {
     if (!url) {
       throw new Error("Missing URL.");
     }
@@ -56,7 +81,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const trimmedLabel = label ? label.replace(/\s+/g, " ").trim() : "";
     const finalLabel = trimmedLabel || normalizedUrl;
 
-    return { url: normalizedUrl, label: finalLabel };
+    return {
+      url: normalizedUrl,
+      label: finalLabel,
+      html: typeof html === "string" ? html : ""
+    };
   };
 
   const showCurrentEntry = () => {
@@ -64,7 +93,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    frame.src = history[position].url;
+    frame.removeAttribute("src");
+    frame.srcdoc = history[position].html || "";
     renderHistory();
     updateControls();
   };
@@ -79,13 +109,17 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const entry = normalizeEntry(entryData);
 
+      if (!entry.html) {
+        throw new Error("No preview available for this page.");
+      }
+
       if (pushHistory) {
         pushEntry(entry);
       }
 
       showCurrentEntry();
     } catch (error) {
-      setStatus("Received an invalid URL.");
+      setStatus(error.message || "Received an invalid URL.", { type: "error" });
     }
   };
 
@@ -95,23 +129,21 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const currentUrl = () => {
-    if (position >= 0) {
-      return history[position];
+    if (position >= 0 && history[position]) {
+      return history[position].url;
     }
 
-    return frame.getAttribute("src");
+    return defaultUrl;
   };
 
   nextButton.addEventListener("click", async () => {
-    setStatus("", { success: false });
+    setStatus("");
     setLoading(true);
 
     try {
       const url = currentUrl();
-      if (!url) {
-        throw new Error("No current URL available.");
-      }
-      const response = await fetch(`/walk?url=${encodeURIComponent(url)}`, {
+      const endpoint = url ? `/walk?url=${encodeURIComponent(url)}` : "/walk";
+      const response = await fetch(endpoint, {
         headers: { Accept: "application/json" }
       });
 
@@ -136,13 +168,14 @@ document.addEventListener("DOMContentLoaded", () => {
       navigateTo(
         {
           url: payload.url,
-          label: payload.label
+          label: payload.label,
+          html: payload.html
         },
         { pushHistory: true }
       );
-      setStatus("Found a new page!", { success: true });
+      setStatus("Found a new page!", { type: "success" });
     } catch (error) {
-      setStatus(error.message || "Failed to fetch next page.");
+      setStatus(error.message || "Failed to fetch next page.", { type: "error" });
     } finally {
       setLoading(false);
     }
@@ -155,18 +188,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     position -= 1;
     showCurrentEntry();
-    setStatus("Returned to a previous page.", { success: true });
+    setStatus("Returned to a previous page.", { type: "success" });
   });
 
   const initial = frame.getAttribute("src");
-  if (initial) {
+  if (initial && initial !== "about:blank") {
     try {
       pushEntry(normalizeEntry({ url: initial }));
       showCurrentEntry();
     } catch (error) {
-      setStatus("Failed to initialize walker.");
+      setStatus("Failed to initialize walker.", { type: "error" });
     }
   }
 
+  if (startForm && startInput) {
+    startForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const rawValue = startInput.value.trim();
+
+      try {
+        if (!rawValue) {
+          throw new Error("URL is required.");
+        }
+
+        const normalized = new URL(rawValue).toString();
+        if (!/^https?:/i.test(normalized)) {
+          throw new Error("Only http/https URLs are supported.");
+        }
+
+        defaultUrl = normalized;
+        startInput.value = normalized;
+        frame.dataset.defaultUrl = normalized;
+        clearHistory();
+        setStatus("Start URL updated.", { type: "success" });
+      } catch (error) {
+        setStatus(error.message || "Invalid start URL.", { type: "error" });
+      }
+    });
+  }
+
   nextButton.textContent = walkButtonLabel.idle;
+  setStatus(status.textContent.trim());
 });

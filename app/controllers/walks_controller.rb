@@ -3,7 +3,7 @@ class WalksController < ApplicationController
     current = params[:url].presence || default_start_url
     picker = RandomWalker::LinkPicker.new(url: current)
     link = picker.next_link
-    render json: { url: link.url, label: link.label }
+    render json: { url: link.url, label: link.label, html: link.html }
   rescue RandomWalker::LinkPicker::Error => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
