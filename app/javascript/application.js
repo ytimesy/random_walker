@@ -9,11 +9,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const backButton = document.getElementById("walker-back");
   const status = document.getElementById("walker-status");
   const historyList = document.getElementById("walker-history-list");
+  const autoButton = document.getElementById("walker-auto");
   const startForm = document.getElementById("walker-start-form");
   const startInput = document.getElementById("walker-start-url");
   let defaultUrl = frame?.dataset?.defaultUrl || null;
+  const AUTO_INTERVAL = 5000;
+  let autoTimer = null;
+  let isLoading = false;
 
-  if (!frame || !nextButton || !backButton || !historyList || !status) {
+  if (!frame || !nextButton || !backButton || !historyList || !status || !autoButton) {
     return;
   }
 
@@ -72,6 +76,51 @@ document.addEventListener("DOMContentLoaded", () => {
     updateControls();
   };
 
+  const goBack = () => {
+    if (position <= 0) {
+      return false;
+    }
+
+    position -= 1;
+    showCurrentEntry();
+    return true;
+  };
+
+  const stopAuto = ({ silent = false } = {}) => {
+    if (!autoTimer) {
+      return;
+    }
+
+    clearInterval(autoTimer);
+    autoTimer = null;
+    autoButton.classList.remove("is-active");
+    autoButton.setAttribute("aria-pressed", "false");
+    if (!silent) {
+      setStatus("Auto walk stopped.", { type: "success" });
+    }
+  };
+
+  const startAuto = () => {
+    if (autoTimer) {
+      return;
+    }
+
+    if (!currentUrl()) {
+      setStatus("Set a start URL first.", { type: "error" });
+      return;
+    }
+
+    autoButton.classList.add("is-active");
+    autoButton.setAttribute("aria-pressed", "true");
+    setStatus("Auto walk started.", { type: "success" });
+
+    autoTimer = setInterval(() => {
+      performStep({ preserveStatus: true });
+    }, AUTO_INTERVAL);
+
+    performStep({ preserveStatus: true });
+  };
+
   const normalizeEntry = ({ url, label, html }) => {
     if (!url) {
       throw new Error("Missing URL.");
@@ -124,6 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const setLoading = (loading) => {
+    isLoading = loading;
     nextButton.disabled = loading;
     nextButton.textContent = loading ? walkButtonLabel.loading : walkButtonLabel.idle;
   };
@@ -136,8 +186,15 @@ document.addEventListener("DOMContentLoaded", () => {
     return defaultUrl;
   };
 
-  nextButton.addEventListener("click", async () => {
-    setStatus("");
+  const performStep = async ({ preserveStatus = false } = {}) => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!preserveStatus) {
+      setStatus("");
+    }
+
     setLoading(true);
 
     try {
@@ -173,12 +230,38 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         { pushHistory: true }
       );
-      setStatus("Found a new page!", { type: "success" });
+
+      if (!preserveStatus) {
+        setStatus("Found a new page!", { type: "success" });
+      }
     } catch (error) {
-      setStatus(error.message || "Failed to fetch next page.", { type: "error" });
+      const message = error.message || "Failed to fetch next page.";
+
+      if (/no navigable links found/i.test(message)) {
+        const movedBack = goBack();
+        const infoMessage = movedBack
+          ? "No links here. Returned to a previous page."
+          : "No links found on the current page.";
+
+        setStatus(infoMessage, { type: "error" });
+
+        if (autoTimer && movedBack) {
+          setTimeout(() => {
+            performStep({ preserveStatus: true });
+          }, AUTO_INTERVAL);
+        } else if (autoTimer) {
+          stopAuto({ silent: true });
+        }
+      } else {
+        setStatus(message, { type: "error" });
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  nextButton.addEventListener("click", () => {
+    performStep();
   });
 
   backButton.addEventListener("click", () => {
@@ -186,8 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    position -= 1;
-    showCurrentEntry();
+    goBack();
     setStatus("Returned to a previous page.", { type: "success" });
   });
 
@@ -221,12 +303,25 @@ document.addEventListener("DOMContentLoaded", () => {
         startInput.value = normalized;
         frame.dataset.defaultUrl = normalized;
         clearHistory();
+        stopAuto({ silent: true });
         setStatus("Start URL updated.", { type: "success" });
       } catch (error) {
         setStatus(error.message || "Invalid start URL.", { type: "error" });
       }
     });
   }
+
+  autoButton.addEventListener("click", () => {
+    if (autoTimer) {
+      stopAuto();
+    } else {
+      startAuto();
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    stopAuto({ silent: true });
+  });
 
   nextButton.textContent = walkButtonLabel.idle;
   setStatus(status.textContent.trim());
