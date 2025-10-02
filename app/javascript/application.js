@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const AUTO_INTERVAL = 5000;
   let autoTimer = null;
   let isLoading = false;
+  let failureStreak = 0;
 
   if (!frame || !nextButton || !backButton || !historyList || !status || !autoButton) {
     return;
@@ -26,6 +27,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const history = [];
   let position = -1;
+
+  const annotateHistoryError = (index, message) => {
+    if (index < 0 || index >= history.length) {
+      return;
+    }
+
+    history[index] = { ...history[index], error: message };
+    renderHistory();
+  };
 
   const setStatus = (message = "", { type = null } = {}) => {
     status.textContent = message;
@@ -59,6 +69,14 @@ document.addEventListener("DOMContentLoaded", () => {
       anchor.rel = "noopener noreferrer";
 
       item.appendChild(anchor);
+
+      if (entry.error) {
+        const errorText = document.createElement("span");
+        errorText.className = "walker-history-error";
+        errorText.textContent = ` — ${entry.error}`;
+        item.appendChild(errorText);
+      }
+
       historyList.appendChild(item);
     });
   };
@@ -121,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
     performStep({ preserveStatus: true });
   };
 
-  const normalizeEntry = ({ url, label, html }) => {
+  const normalizeEntry = ({ url, label, html, error }) => {
     if (!url) {
       throw new Error("Missing URL.");
     }
@@ -133,7 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return {
       url: normalizedUrl,
       label: finalLabel,
-      html: typeof html === "string" ? html : ""
+      html: typeof html === "string" ? html : "",
+      error: error || ""
     };
   };
 
@@ -149,7 +168,16 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const pushEntry = (entry) => {
-    history.splice(position + 1);
+    const insertAt = position + 1;
+
+    if (insertAt < history.length) {
+      const tail = history.splice(insertAt);
+      const retained = tail.filter((item) => item && item.error);
+      if (retained.length) {
+        history.push(...retained);
+      }
+    }
+
     history.push(entry);
     position = history.length - 1;
   };
@@ -231,6 +259,8 @@ document.addEventListener("DOMContentLoaded", () => {
         { pushHistory: true }
       );
 
+      failureStreak = 0;
+
       if (!preserveStatus) {
         setStatus("Found a new page!", { type: "success" });
       }
@@ -238,22 +268,35 @@ document.addEventListener("DOMContentLoaded", () => {
       const message = error.message || "Failed to fetch next page.";
 
       if (/no navigable links found/i.test(message)) {
+        const problematicIndex = position;
         const movedBack = goBack();
         const infoMessage = movedBack
           ? "No links here. Returned to a previous page."
           : "No links found on the current page.";
 
+        failureStreak += 1;
+        annotateHistoryError(problematicIndex, infoMessage);
         setStatus(infoMessage, { type: "error" });
+
+        if (failureStreak >= 5) {
+          const skipped = goBack();
+          if (skipped) {
+            annotateHistoryError(position + 1, "Skipping page after repeated failures.");
+            failureStreak = 0;
+          }
+        }
 
         if (autoTimer && movedBack) {
           setTimeout(() => {
             performStep({ preserveStatus: true });
-          }, AUTO_INTERVAL);
+          }, 10);
         } else if (autoTimer) {
           stopAuto({ silent: true });
         }
       } else {
+        failureStreak += 1;
         setStatus(message, { type: "error" });
+        annotateHistoryError(position, message);
       }
     } finally {
       setLoading(false);
