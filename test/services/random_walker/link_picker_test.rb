@@ -205,5 +205,41 @@ module RandomWalker
         assert_includes link.html, "ok"
       end
     end
+
+    test "skips links flagged as unsafe" do
+      html = <<~HTML
+        <html><body>
+          <a href="https://192.168.1.1/phish">Bad</a>
+          <a href="https://example.com/good">Good</a>
+        </body></html>
+      HTML
+
+      picker = build_picker(html)
+
+      fetch_stub = ->(url) { [ "<html><body>#{url}</body></html>", URI.parse(url) ] }
+
+      picker.stub(:fetch_target_page, fetch_stub) do
+        link = picker.next_link
+        assert_equal "https://example.com/good", link.url
+      end
+    end
+
+    test "raises when all links are unsafe" do
+      html = <<~HTML
+        <html><body>
+          <a href="https://192.168.1.1/phish">Bad</a>
+        </body></html>
+      HTML
+
+      picker = build_picker(html)
+
+      error = assert_raises(RandomWalker::LinkPicker::Error) do
+        picker.stub(:fetch_target_page, ->(url) { [ "<html></html>", URI.parse(url) ] }) do
+          picker.next_link
+        end
+      end
+
+      assert_match(/Blocked unsafe URL/, error.message)
+    end
   end
 end

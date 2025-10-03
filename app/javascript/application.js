@@ -1,5 +1,5 @@
 const walkButtonLabel = {
-  idle: "Random step",
+  idle: "1 Walk",
   loading: "Walking..."
 };
 
@@ -7,18 +7,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const frame = document.getElementById("walker-frame");
   const nextButton = document.getElementById("walker-next");
   const backButton = document.getElementById("walker-back");
+  const stopButton = document.getElementById("walker-stop");
   const status = document.getElementById("walker-status");
   const historyList = document.getElementById("walker-history-list");
   const autoButton = document.getElementById("walker-auto");
   const startForm = document.getElementById("walker-start-form");
   const startInput = document.getElementById("walker-start-url");
+  const currentUrlValue = document.getElementById("walker-current-url");
+  const DEFAULT_CURRENT_URL_TEXT = "No page loaded.";
   let defaultUrl = frame?.dataset?.defaultUrl || null;
   const AUTO_INTERVAL = 5000;
   let autoTimer = null;
   let isLoading = false;
   let failureStreak = 0;
 
-  if (!frame || !nextButton || !backButton || !historyList || !status || !autoButton) {
+  if (!frame || !nextButton || !historyList || !status || !autoButton || !stopButton) {
     return;
   }
 
@@ -82,7 +85,30 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateControls = () => {
-    backButton.disabled = position <= 0;
+    if (backButton) {
+      backButton.disabled = position <= 0;
+    }
+
+    stopButton.disabled = !autoTimer;
+  };
+
+  const updateCurrentUrlDisplay = () => {
+    if (!currentUrlValue) {
+      return;
+    }
+
+    const activeEntry = position >= 0 ? history[position] : null;
+    if (activeEntry && activeEntry.url) {
+      currentUrlValue.textContent = activeEntry.url;
+      return;
+    }
+
+    if (defaultUrl) {
+      currentUrlValue.textContent = defaultUrl;
+      return;
+    }
+
+    currentUrlValue.textContent = DEFAULT_CURRENT_URL_TEXT;
   };
 
   const clearHistory = () => {
@@ -92,6 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
     frame.srcdoc = "";
     renderHistory();
     updateControls();
+    updateCurrentUrlDisplay();
   };
 
   const goBack = () => {
@@ -113,6 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     autoTimer = null;
     autoButton.classList.remove("is-active");
     autoButton.setAttribute("aria-pressed", "false");
+    updateControls();
     if (!silent) {
       setStatus("Auto walk stopped.", { type: "success" });
     }
@@ -136,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
       performStep({ preserveStatus: true });
     }, AUTO_INTERVAL);
 
+    updateControls();
     performStep({ preserveStatus: true });
   };
 
@@ -165,6 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
     frame.srcdoc = history[position].html || "";
     renderHistory();
     updateControls();
+    updateCurrentUrlDisplay();
   };
 
   const pushEntry = (entry) => {
@@ -250,6 +280,8 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error("No URL returned by server.");
       }
 
+      const statusWasError = status.classList.contains("is-error");
+
       navigateTo(
         {
           url: payload.url,
@@ -261,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       failureStreak = 0;
 
-      if (!preserveStatus) {
+
         setStatus("Found a new page!", { type: "success" });
       }
     } catch (error) {
@@ -307,13 +339,19 @@ document.addEventListener("DOMContentLoaded", () => {
     performStep();
   });
 
-  backButton.addEventListener("click", () => {
-    if (position <= 0) {
-      return;
-    }
+  if (backButton) {
+    backButton.addEventListener("click", () => {
+      if (position <= 0) {
+        return;
+      }
 
-    goBack();
-    setStatus("Returned to a previous page.", { type: "success" });
+      goBack();
+      setStatus("Returned to a previous page.", { type: "success" });
+    });
+  }
+
+  stopButton.addEventListener("click", () => {
+    stopAuto();
   });
 
   const initial = frame.getAttribute("src");
@@ -367,5 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   nextButton.textContent = walkButtonLabel.idle;
+  updateControls();
+  updateCurrentUrlDisplay();
   setStatus(status.textContent.trim());
 });
