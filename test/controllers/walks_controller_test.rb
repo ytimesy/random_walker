@@ -39,7 +39,7 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
   test "marks unsafe responses with reasons" do
     unsafe_error = RandomWalker::LinkPicker::UnsafeURLError.new(
       "http://evil.test",
-      ["IP address hosts are blocked", "Suspicious top-level domain"]
+      [ "IP address hosts are blocked", "Suspicious top-level domain" ]
     )
 
     picker = Object.new
