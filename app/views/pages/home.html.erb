@@ -1,43 +1,58 @@
-<div class="walker-container">
-  <h1>Random Walker</h1>
-
-  <div class="walker-controls">
-    <button type="button" id="walker-next">Random step</button>
-    <button type="button" id="walker-back" disabled>Back</button>
-    <button type="button" id="walker-auto" aria-pressed="false">Auto walk</button>
-  </div>
-
-  <form id="walker-start-form" class="walker-start" autocomplete="off">
-    <label for="walker-start-url">Start from this URL</label>
-    <div class="walker-start-fields">
-      <input
-        type="url"
-        id="walker-start-url"
-        name="start_url"
-        placeholder="https://example.com"
-        value="<%= @initial_url %>"
-        required
-        inputmode="url"
-      >
-      <button type="submit">Set</button>
+<header class="walker-header">
+  <div class="walker-header-inner">
+    <div class="walker-header-top">
+      <h1>Random Walker</h1>
+      <form id="walker-start-form" class="walker-start" autocomplete="off">
+        <label for="walker-start-url">Start from this URL</label>
+        <div class="walker-start-fields">
+          <input
+            type="url"
+            id="walker-start-url"
+            name="start_url"
+            placeholder="https://example.com"
+            value="<%= @initial_url %>"
+            required
+            inputmode="url"
+          >
+          <button type="submit">Set</button>
+        </div>
+      </form>
     </div>
-  </form>
 
-  <p id="walker-status" class="walker-status" role="status" aria-live="polite">
-    Press "Random step" to begin wandering.
-  </p>
+    <div class="walker-header-actions">
+      <div class="walker-controls">
+        <button type="button" id="walker-next">1 Walk</button>
+        <button type="button" id="walker-stop" disabled>Stop</button>
+        <button type="button" id="walker-auto" aria-pressed="false">Auto walk</button>
+      </div>
 
-  <iframe
-    src="about:blank"
-    title="Current site"
-    class="walker-frame"
-    id="walker-frame"
-    sandbox="allow-popups allow-popups-to-escape-sandbox"
-    data-default-url="<%= @initial_url %>"
-  ></iframe>
+      <div class="walker-header-meta">
+        <p id="walker-status" class="walker-status" role="status" aria-live="polite">
+          Press "1 Walk" to begin wandering.
+        </p>
+        <p class="walker-current-url" aria-live="polite">
+          <span class="walker-current-url-label">Viewing:</span>
+          <span id="walker-current-url" class="walker-current-url-value">No page loaded.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="walker-main">
+  <div class="walker-view">
+    <iframe
+      src="about:blank"
+      title="Current site"
+      class="walker-frame"
+      id="walker-frame"
+      sandbox="allow-popups allow-popups-to-escape-sandbox"
+      data-default-url="<%= @initial_url %>"
+    ></iframe>
+  </div>
 
   <section class="walker-history" aria-label="Visited URLs">
     <h2>History</h2>
     <ol id="walker-history-list"></ol>
   </section>
-</div>
+</main>

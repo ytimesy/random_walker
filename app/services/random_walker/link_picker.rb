@@ -38,9 +38,11 @@ module RandomWalker
         next if visited?(candidate.url)
 
         begin
+          ensure_safe!(candidate.url)
           body, final_uri = fetch_target_page(candidate.url)
           resolved_uri = coerce_uri(final_uri) || parse_source_url(candidate.url)
           next if visited?(resolved_uri)
+          ensure_safe!(resolved_uri)
           sanitized = sanitize_for_embed(body, resolved_uri)
 
           return Link.new(
@@ -243,7 +245,7 @@ module RandomWalker
       serialized = html.to_s
       raise Error, "Empty response" if serialized.strip.empty?
 
-      document = Nokogiri::HTML(serialized)
+    document = Nokogiri::HTML(serialized)
 
       document.css("script, iframe, frame, frameset, object, embed").remove
       document.css("meta[http-equiv]").each do |node|
@@ -286,6 +288,18 @@ module RandomWalker
       end
 
       document.to_html
+    end
+
+    def ensure_safe!(candidate)
+      result = RandomWalker::UrlSafetyChecker.evaluate(candidate)
+      return if result.safe?
+
+      raise Error, unsafe_url_message(candidate, result)
+    end
+
+    def unsafe_url_message(candidate, result)
+      details = result.reasons.join("; ")
+      "Blocked unsafe URL #{candidate}: #{details}"
     end
   end
 end
