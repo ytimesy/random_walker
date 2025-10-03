@@ -293,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       failureStreak = 0;
 
-      if (!preserveStatus || statusWasError) {
+
         setStatus("Found a new page!", { type: "success" });
       }
     } catch (error) {
