@@ -5,7 +5,15 @@ class WalksController < ApplicationController
     link = picker.next_link
     render json: { url: link.url, label: link.label, html: link.html }
   rescue RandomWalker::LinkPicker::Error => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    payload = { error: e.message }
+
+    if e.is_a?(RandomWalker::LinkPicker::UnsafeURLError)
+      payload[:unsafe] = true
+      payload[:reasons] = e.reasons
+      payload[:blocked_url] = e.candidate
+    end
+
+    render json: payload, status: :unprocessable_entity
   end
 
   private

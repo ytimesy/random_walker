@@ -233,13 +233,15 @@ module RandomWalker
 
       picker = build_picker(html)
 
-      error = assert_raises(RandomWalker::LinkPicker::Error) do
+      error = assert_raises(RandomWalker::LinkPicker::UnsafeURLError) do
         picker.stub(:fetch_target_page, ->(url) { [ "<html></html>", URI.parse(url) ] }) do
           picker.next_link
         end
       end
 
       assert_match(/Blocked unsafe URL/, error.message)
+      assert_equal "https://192.168.1.1/phish", error.candidate
+      assert_includes error.reasons.join(";"), "IP address"
     end
   end
 end

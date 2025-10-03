@@ -255,6 +255,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setLoading(true);
 
+    let lastPayload = null;
+
     try {
       const url = currentUrl();
       const endpoint = url ? `/walk?url=${encodeURIComponent(url)}` : "/walk";
@@ -271,6 +273,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (parseError) {
         payload = {};
       }
+
+      lastPayload = payload;
 
       if (!response.ok) {
         throw new Error(payload.error || "Unable to walk right now.");
@@ -293,11 +297,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
       failureStreak = 0;
 
-
+      if (!preserveStatus || statusWasError) {
         setStatus("Found a new page!", { type: "success" });
       }
     } catch (error) {
-      const message = error.message || "Failed to fetch next page.";
+      const payload = lastPayload || {};
+      const message = error.message || payload.error || "Failed to fetch next page.";
+      const unsafeReasons = Array.isArray(payload.reasons) ? payload.reasons : [];
+      const isUnsafe = Boolean(payload.unsafe) || /blocked unsafe url/i.test(message);
+
+      if (isUnsafe) {
+        const detail = unsafeReasons.length ? unsafeReasons.join("; ") : null;
+        const statusMessage = detail
+          ? `Safety filter blocked navigation: ${detail}`
+          : message;
+
+        annotateHistoryError(position, statusMessage);
+        stopAuto({ silent: true });
+        setStatus(statusMessage, { type: "error" });
+        return;
+      }
 
       if (/no navigable links found/i.test(message)) {
         const problematicIndex = position;

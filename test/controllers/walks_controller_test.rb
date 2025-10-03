@@ -33,6 +33,30 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
     body = JSON.parse(response.body)
     assert_equal "no links", body["error"]
+    refute body["unsafe"]
+  end
+
+  test "marks unsafe responses with reasons" do
+    unsafe_error = RandomWalker::LinkPicker::UnsafeURLError.new(
+      "http://evil.test",
+      ["IP address hosts are blocked", "Suspicious top-level domain"]
+    )
+
+    picker = Object.new
+    picker.define_singleton_method(:next_link) do
+      raise unsafe_error
+    end
+
+    RandomWalker::LinkPicker.stub(:new, ->(url:) { picker }) do
+      get walk_url(format: :json), params: { url: "https://example.com" }
+    end
+
+    assert_response :unprocessable_entity
+    body = JSON.parse(response.body)
+    assert_equal unsafe_error.message, body["error"]
+    assert_equal true, body["unsafe"]
+    assert_equal unsafe_error.reasons, body["reasons"]
+    assert_equal unsafe_error.candidate, body["blocked_url"]
   end
 
   test "falls back to initial url when param blank" do

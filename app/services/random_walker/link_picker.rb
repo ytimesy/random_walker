@@ -9,6 +9,23 @@ module RandomWalker
   class LinkPicker
     class Error < StandardError; end
 
+    class UnsafeURLError < Error
+      attr_reader :candidate, :reasons
+
+      def initialize(candidate, reasons)
+        @candidate = candidate.to_s
+        @reasons = Array(reasons).map(&:to_s)
+        super(build_message)
+      end
+
+      private
+
+      def build_message
+        details = reasons.any? ? reasons.join("; ") : "No details provided"
+        "Blocked unsafe URL #{candidate}: #{details}"
+      end
+    end
+
     Link = Data.define(:url, :label, :html)
 
     USER_AGENT = "RandomWalkerBot/1.0 (+https://example.com)".freeze
@@ -294,12 +311,7 @@ module RandomWalker
       result = RandomWalker::UrlSafetyChecker.evaluate(candidate)
       return if result.safe?
 
-      raise Error, unsafe_url_message(candidate, result)
-    end
-
-    def unsafe_url_message(candidate, result)
-      details = result.reasons.join("; ")
-      "Blocked unsafe URL #{candidate}: #{details}"
+      raise UnsafeURLError.new(candidate, result.reasons)
     end
   end
 end

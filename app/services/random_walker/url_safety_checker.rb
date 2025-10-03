@@ -4,7 +4,7 @@ require "uri"
 
 module RandomWalker
   class UrlSafetyChecker
-    Result = Data.define(:safe?, :score, :reasons)
+    Result = Struct.new(:safe?, :score, :reasons, keyword_init: true)
 
     SUSPICIOUS_TLDS = %w[
       zip review country stream download gq work men loan click link
@@ -14,7 +14,9 @@ module RandomWalker
       login verify update account secure free gift winner bitcoin crypto invest
     ].freeze
 
-    MAX_SAFE_SCORE = 1
+    HTTPS_PENALTY = 1
+    KEYWORD_PENALTY = 1
+    HIGH_RISK_PENALTY = 5
 
     def self.evaluate(uri)
       new(uri).evaluate
@@ -25,31 +27,31 @@ module RandomWalker
     end
 
     def evaluate
-      reasons = []
+      warnings = []
+      high_risk_reasons = []
       score = 0
 
-      unless https?
-        reasons << "URL must use HTTPS"
-        score += 1
-      end
-
-      if ip_host?
-        reasons << "IP address hosts are blocked"
-        score += 2
-      end
-
-      if suspicious_tld?
-        reasons << "Suspicious top-level domain"
-        score += 2
+      if !https?
+        warnings << "URL must use HTTPS"
+        score += HTTPS_PENALTY
       end
 
       keyword_hits = suspicious_keyword_hits
       unless keyword_hits.empty?
-        reasons << "Contains suspicious terms: #{keyword_hits.join(", ")}"
-        score += 1
+        warnings << "Contains suspicious terms: #{keyword_hits.join(", ")}"
+        score += KEYWORD_PENALTY
       end
 
-      Result.new(safe?: score <= MAX_SAFE_SCORE, score: score, reasons: reasons)
+      high_risk_reasons << "IP address hosts are blocked" if ip_host?
+      high_risk_reasons << "Suspicious top-level domain" if suspicious_tld?
+
+      if high_risk_reasons.any?
+        reasons = high_risk_reasons + warnings
+        score += HIGH_RISK_PENALTY * high_risk_reasons.size
+        Result.new(safe?: false, score: score, reasons: reasons)
+      else
+        Result.new(safe?: true, score: score, reasons: warnings)
+      end
     rescue URI::InvalidURIError => e
       Result.new(safe?: false, score: Float::INFINITY, reasons: [ "Invalid URL: #{e.message}" ])
     end
