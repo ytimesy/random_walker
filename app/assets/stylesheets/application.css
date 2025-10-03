@@ -148,3 +148,9 @@
   color: #2563eb;
   font-weight: 600;
 }
+
+.walker-history-error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-left: 0.25rem;
+}
