@@ -73,6 +73,16 @@
   text-align: center;
 }
 
+.walker-controls #walker-search {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
+}
+
+.walker-controls #walker-search.is-active {
+  background: linear-gradient(135deg, #d97706, #fb923c);
+  box-shadow: 0 12px 24px rgba(234, 179, 8, 0.35);
+}
+
 .walker-controls #walker-stop {
   background: linear-gradient(135deg, #ef4444, #f97316);
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
@@ -229,4 +239,3 @@
   font-size: 0.85rem;
   margin-left: 0.25rem;
 }
-
