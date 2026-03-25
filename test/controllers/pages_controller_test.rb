@@ -6,6 +6,8 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_match "Random Walker", response.body
+    assert_match "Saved Trails", response.body
+    assert_match "Become a supporter", response.body
   end
 
   test "renders pricing" do
@@ -13,6 +15,7 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_match "Supporter", response.body
+    assert_match "Become a supporter", response.body
   end
 
   test "renders privacy" do

@@ -328,6 +328,13 @@ body::before {
   margin-top: 1.2rem;
 }
 
+.walker-trail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
 .walker-mode-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -403,6 +410,19 @@ body::before {
   box-shadow: 0 16px 30px rgba(255, 105, 166, 0.26);
 }
 
+.walker-trail-actions button {
+  padding: 0.82rem 1.05rem;
+  border: 1px solid rgba(197, 115, 151, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 247, 252, 0.94);
+  color: #86486c;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 14px 24px rgba(237, 184, 206, 0.12);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
 .walker-controls button::before,
 .walker-start button[type="submit"]::before {
   content: "";
@@ -429,12 +449,14 @@ body::before {
 }
 
 .walker-controls button:hover:not(:disabled),
-.walker-start button[type="submit"]:hover {
+.walker-start button[type="submit"]:hover,
+.walker-trail-actions button:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.01);
   filter: saturate(1.05);
 }
 
-.walker-controls button:disabled {
+.walker-controls button:disabled,
+.walker-trail-actions button:disabled {
   cursor: not-allowed;
   background: linear-gradient(135deg, #d8c8d1, #d7d0db);
   box-shadow: none;
@@ -645,6 +667,70 @@ body::before {
   line-height: 1.7;
 }
 
+.walker-saved-section {
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(197, 115, 151, 0.14);
+}
+
+.walker-saved-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.walker-saved-empty,
+.walker-saved-item {
+  padding: 0.95rem 1rem;
+  border-radius: 20px;
+  background: rgba(255, 245, 250, 0.92);
+  border: 1px solid rgba(197, 115, 151, 0.14);
+  box-shadow: 0 10px 24px rgba(255, 189, 208, 0.12);
+}
+
+.walker-saved-item + .walker-saved-item {
+  margin-top: 0.8rem;
+}
+
+.walker-saved-empty {
+  color: var(--walker-ink-soft);
+  line-height: 1.7;
+}
+
+.walker-saved-name {
+  margin: 0;
+  color: #86486c;
+  font-weight: 800;
+}
+
+.walker-saved-meta {
+  margin: 0.4rem 0 0;
+  color: var(--walker-ink-soft);
+  font-size: 0.88rem;
+}
+
+.walker-saved-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.walker-saved-button {
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(197, 115, 151, 0.18);
+  background: #fff8fb;
+  color: #86486c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.walker-saved-button.is-delete {
+  color: #ba456e;
+}
+
 #walker-history-list {
   margin: 0;
   padding-left: 1.2rem;
@@ -683,6 +769,7 @@ body::before {
 }
 
 .walker-launch-grid,
+.walker-supporter-banner,
 .walker-pricing-section,
 .walker-site-footer,
 .walker-legal-hero,
@@ -702,6 +789,40 @@ body::before {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   padding: 1rem;
+}
+
+.walker-supporter-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.3rem;
+}
+
+.walker-supporter-copy {
+  max-width: 42rem;
+}
+
+.walker-supporter-copy h2 {
+  margin: 0;
+  font-family: var(--walker-font-display);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  line-height: 1.04;
+  color: #7d4163;
+}
+
+.walker-supporter-copy p:last-child {
+  margin-bottom: 0;
+  color: var(--walker-ink-soft);
+  line-height: 1.8;
+}
+
+.walker-supporter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
 }
 
 .walker-launch-card {
@@ -1015,7 +1136,17 @@ body::before {
     grid-template-columns: 1fr;
   }
 
+  .walker-trail-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .walker-controls button {
+    width: 100%;
+  }
+
+  .walker-trail-actions button,
+  .walker-saved-button {
     width: 100%;
   }
 
@@ -1030,6 +1161,8 @@ body::before {
 
   .walker-pricing-actions,
   .walker-preview-actions,
+  .walker-supporter-actions,
+  .walker-saved-actions,
   .walker-site-footer,
   .walker-footer-links {
     flex-direction: column;

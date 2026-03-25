@@ -12,7 +12,8 @@ class PagesController < ApplicationController
         tone: "For curious visitors",
         features: [
           "One-click random walks",
-          "Cute history log",
+          "Local saved trails",
+          "JSON trail export",
           "Starter public destinations"
         ]
       },
@@ -21,7 +22,7 @@ class PagesController < ApplicationController
         price: "JPY 500/mo",
         tone: "Best first paid tier",
         features: [
-          "Saved walk trails",
+          "Future cloud sync",
           "More themes and mascots",
           "Priority on new destination packs"
         ]

@@ -60,6 +60,11 @@
         <button type="button" id="walker-auto" aria-pressed="false">Auto walk</button>
       </div>
 
+      <div class="walker-trail-actions">
+        <button type="button" id="walker-save-trail" disabled>Save trail</button>
+        <button type="button" id="walker-export-trail" disabled>Export JSON</button>
+      </div>
+
       <div class="walker-mode-strip">
         <button type="button" id="walker-ribbon-toggle" class="walker-ribbon-toggle" aria-pressed="false">
           <span class="walker-ribbon-toggle-kicker">りぼんモード</span>
@@ -156,8 +161,38 @@
         おさんぽの足あとをここにストックします。
       </p>
       <ol id="walker-history-list"></ol>
+
+      <section class="walker-saved-section" aria-labelledby="walker-saved-title">
+        <div class="walker-history-header walker-saved-header">
+          <div>
+            <p class="walker-card-kicker">Saved Routes</p>
+            <h2 id="walker-saved-title">Saved Trails</h2>
+          </div>
+        </div>
+        <p class="walker-history-note">
+          保存済みルートはこのブラウザに残ります。ロード、再訪、JSON書き出しに使えます。
+        </p>
+        <ul id="walker-saved-list" class="walker-saved-list"></ul>
+      </section>
     </aside>
   </main>
+
+  <section class="walker-supporter-banner" aria-labelledby="walker-supporter-title">
+    <div class="walker-supporter-copy">
+      <p class="walker-kicker">Supporter Push</p>
+      <h2 id="walker-supporter-title">Save locally today, fund cloud sync next</h2>
+      <p>
+        いまはローカル保存とJSONエクスポートを提供します。サポーター課金は、クラウド同期、限定テーマ、
+        共有ルート機能を前に進めるための原資です。
+      </p>
+    </div>
+    <div class="walker-supporter-actions">
+      <a href="<%= @support_url %>" class="walker-cta-link" target="_blank" rel="noopener">
+        Become a supporter
+      </a>
+      <%= link_to "See pricing", pricing_path, class: "walker-text-link" %>
+    </div>
+  </section>
 
   <section class="walker-launch-grid" aria-label="Launch plan">
     <article class="walker-launch-card">

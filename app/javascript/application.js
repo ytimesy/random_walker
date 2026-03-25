@@ -5,7 +5,9 @@ const walkButtonLabel = {
 const RIBBON_STORAGE_KEY = "randomWalker.ribbonMode";
 const SWEET_STORAGE_KEY = "randomWalker.sweetClick";
 const LUCKY_STORAGE_KEY = "randomWalker.luckyJump";
+const SAVED_TRAILS_STORAGE_KEY = "randomWalker.savedTrails";
 const MAX_VISITED_URLS_SENT = 20;
+const MAX_SAVED_TRAILS = 12;
 
 document.addEventListener("DOMContentLoaded", () => {
   const previewCard = document.getElementById("walker-preview-card");
@@ -18,8 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const nextButton = document.getElementById("walker-next");
   const backButton = document.getElementById("walker-back");
   const stopButton = document.getElementById("walker-stop");
+  const saveTrailButton = document.getElementById("walker-save-trail");
+  const exportTrailButton = document.getElementById("walker-export-trail");
   const status = document.getElementById("walker-status");
   const historyList = document.getElementById("walker-history-list");
+  const savedList = document.getElementById("walker-saved-list");
   const autoButton = document.getElementById("walker-auto");
   const startForm = document.getElementById("walker-start-form");
   const startInput = document.getElementById("walker-start-url");
@@ -54,7 +59,10 @@ document.addEventListener("DOMContentLoaded", () => {
     !previewLabel ||
     !previewLink ||
     !nextButton ||
+    !saveTrailButton ||
+    !exportTrailButton ||
     !historyList ||
+    !savedList ||
     !status ||
     !autoButton ||
     !stopButton
@@ -64,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const history = [];
   let position = -1;
+  let savedTrails = [];
 
   const setPreviewLinkState = (url) => {
     const hasUrl = Boolean(url);
@@ -144,12 +153,186 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const formatSavedTrailTime = (value) => {
+    try {
+      return new Intl.DateTimeFormat("ja-JP", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(value));
+    } catch (error) {
+      return value;
+    }
+  };
+
+  const readSavedTrails = () => {
+    try {
+      const raw = window.localStorage.getItem(SAVED_TRAILS_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const persistSavedTrails = () => {
+    try {
+      window.localStorage.setItem(SAVED_TRAILS_STORAGE_KEY, JSON.stringify(savedTrails));
+      return true;
+    } catch (error) {
+      setStatus("Saved trails could not be written in this browser.", { type: "error" });
+      return false;
+    }
+  };
+
+  const normalizeTrailEntries = (entries) => {
+    return Array.isArray(entries)
+      ? entries.map((entry) => normalizeEntry(entry)).filter(Boolean)
+      : [];
+  };
+
+  const deriveTrailName = () => {
+    const activeEntry = position >= 0 ? history[position] : null;
+
+    if (activeEntry?.title) {
+      return activeEntry.title;
+    }
+
+    if (activeEntry?.siteName) {
+      return `${activeEntry.siteName} trail`;
+    }
+
+    if (defaultUrl) {
+      return `Trail from ${new URL(defaultUrl).host}`;
+    }
+
+    return "Untitled trail";
+  };
+
+  const buildTrailSnapshot = ({ name = deriveTrailName() } = {}) => {
+    if (!history.length) {
+      return null;
+    }
+
+    const normalizedName = typeof name === "string" ? name.trim() : "";
+
+    return {
+      id: `trail-${Date.now()}`,
+      name: normalizedName || deriveTrailName(),
+      savedAt: new Date().toISOString(),
+      startUrl: defaultUrl,
+      position,
+      entries: history.map((entry) => ({
+        url: entry.url,
+        label: entry.rawLabel || entry.label,
+        title: entry.title,
+        description: entry.description,
+        siteName: entry.siteName,
+        host: entry.host,
+        error: entry.error || ""
+      }))
+    };
+  };
+
+  const downloadTrail = (trail) => {
+    if (!trail) {
+      return;
+    }
+
+    const filename = `${(trail.name || "random-walker-trail")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "random-walker-trail"}.json`;
+    const blob = new Blob([JSON.stringify(trail, null, 2)], { type: "application/json" });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  };
+
+  const loadTrail = (trail) => {
+    const entries = normalizeTrailEntries(trail?.entries);
+    if (!entries.length) {
+      setStatus("That saved trail is empty.", { type: "error" });
+      return;
+    }
+
+    stopAuto({ silent: true });
+    history.length = 0;
+    history.push(...entries);
+    defaultUrl = trail.startUrl || entries[0].url;
+
+    if (startInput) {
+      startInput.value = defaultUrl;
+    }
+
+    const restoredPosition = Number.isInteger(trail.position) ? trail.position : entries.length - 1;
+    position = Math.min(Math.max(restoredPosition, 0), entries.length - 1);
+    showCurrentEntry();
+    setStatus(`Loaded saved trail: ${trail.name}`, { type: "success" });
+  };
+
+  const renderSavedTrails = () => {
+    savedList.innerHTML = "";
+
+    if (!savedTrails.length) {
+      const empty = document.createElement("li");
+      empty.className = "walker-saved-empty";
+      empty.textContent = "Save a trail to keep your cutest discoveries around.";
+      savedList.appendChild(empty);
+      return;
+    }
+
+    savedTrails.forEach((trail) => {
+      const item = document.createElement("li");
+      item.className = "walker-saved-item";
+
+      const heading = document.createElement("p");
+      heading.className = "walker-saved-name";
+      heading.textContent = trail.name || "Untitled trail";
+      item.appendChild(heading);
+
+      const meta = document.createElement("p");
+      meta.className = "walker-saved-meta";
+      meta.textContent = `${formatSavedTrailTime(trail.savedAt)} · ${trail.entries?.length || 0} stops`;
+      item.appendChild(meta);
+
+      const actions = document.createElement("div");
+      actions.className = "walker-saved-actions";
+
+      [
+        { action: "load", label: "Load" },
+        { action: "export", label: "Export" },
+        { action: "delete", label: "Delete" }
+      ].forEach(({ action, label }) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `walker-saved-button is-${action}`;
+        button.dataset.action = action;
+        button.dataset.trailId = trail.id;
+        button.textContent = label;
+        actions.appendChild(button);
+      });
+
+      item.appendChild(actions);
+      savedList.appendChild(item);
+    });
+  };
+
   const updateControls = () => {
     if (backButton) {
       backButton.disabled = position <= 0;
     }
 
     stopButton.disabled = !autoTimer;
+    saveTrailButton.disabled = history.length === 0;
+    exportTrailButton.disabled = history.length === 0;
   };
 
   const updateCurrentUrlDisplay = () => {
@@ -178,6 +361,39 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHistory();
     updateControls();
     updateCurrentUrlDisplay();
+  };
+
+  const saveCurrentTrail = () => {
+    const snapshot = buildTrailSnapshot();
+    if (!snapshot) {
+      setStatus("Walk at least one step before saving a trail.", { type: "error" });
+      return;
+    }
+
+    const suggestedName = snapshot.name;
+    const chosenName = window.prompt("Save this trail as:", suggestedName);
+    if (chosenName === null) {
+      return;
+    }
+
+    snapshot.name = chosenName.trim() || suggestedName;
+    savedTrails = [snapshot, ...savedTrails].slice(0, MAX_SAVED_TRAILS);
+
+    if (persistSavedTrails()) {
+      renderSavedTrails();
+      setStatus(`Saved trail: ${snapshot.name}`, { type: "success" });
+    }
+  };
+
+  const exportCurrentTrail = () => {
+    const snapshot = buildTrailSnapshot();
+    if (!snapshot) {
+      setStatus("Walk at least one step before exporting a trail.", { type: "error" });
+      return;
+    }
+
+    downloadTrail(snapshot);
+    setStatus("Current trail exported as JSON.", { type: "success" });
   };
 
   const readStoredRibbonMode = () => {
@@ -609,6 +825,14 @@ document.addEventListener("DOMContentLoaded", () => {
     stopAuto();
   });
 
+  saveTrailButton.addEventListener("click", () => {
+    saveCurrentTrail();
+  });
+
+  exportTrailButton.addEventListener("click", () => {
+    exportCurrentTrail();
+  });
+
   if (startForm && startInput) {
     startForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -662,6 +886,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  savedList.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action][data-trail-id]");
+    if (!button) {
+      return;
+    }
+
+    const trail = savedTrails.find((item) => item.id === button.dataset.trailId);
+    if (!trail) {
+      setStatus("That saved trail could not be found.", { type: "error" });
+      return;
+    }
+
+    if (button.dataset.action === "load") {
+      loadTrail(trail);
+      return;
+    }
+
+    if (button.dataset.action === "export") {
+      downloadTrail(trail);
+      setStatus(`Exported saved trail: ${trail.name}`, { type: "success" });
+      return;
+    }
+
+    if (button.dataset.action === "delete") {
+      savedTrails = savedTrails.filter((item) => item.id !== trail.id);
+      if (persistSavedTrails()) {
+        renderSavedTrails();
+        setStatus(`Deleted saved trail: ${trail.name}`, { type: "success" });
+      }
+    }
+  });
+
   window.addEventListener("beforeunload", () => {
     stopAuto({ silent: true });
   });
@@ -676,6 +932,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setRibbonMode(readStoredRibbonMode(), { announce: false });
   setSweetClickMode(readStoredSweetClickMode(), { announce: false });
   setLuckyJumpMode(readStoredLuckyJumpMode(), { announce: false });
+  savedTrails = readSavedTrails();
+  renderSavedTrails();
   resetPreview();
   updateControls();
   updateCurrentUrlDisplay();
