@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: random-walker
+    name: random-walker-web
     runtime: ruby
     plan: free
     region: oregon
