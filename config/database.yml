@@ -28,5 +28,9 @@ test:
 # Similarly, if you deploy your application as a Docker container, you must
 # ensure the database is located in a persisted volume.
 production:
+  <% if ENV["DATABASE_URL"].present? %>
+  url: <%= ENV["DATABASE_URL"] %>
+  <% else %>
   <<: *default
-  # database: path/to/persistent/storage/production.sqlite3
+  database: <%= ENV.fetch("DATABASE_PATH") { Rails.root.join("storage/production.sqlite3") } %>
+  <% end %>

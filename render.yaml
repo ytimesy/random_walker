@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: random-walker
+    runtime: docker
+    plan: free
+    region: oregon
+    autoDeployTrigger: commit
+    healthCheckPath: /up
+    dockerCommand: ./bin/render-start
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_SERVE_STATIC_FILES
+        value: "true"
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: RANDOM_WALKER_INITIAL_URL
+        value: https://qiita.com/
+      - key: RANDOM_WALKER_ALLOWED_HOSTS
+        value: qiita.com
+      - key: RANDOM_WALKER_SUPPORT_EMAIL
+        sync: false
