@@ -30,11 +30,23 @@ module RandomWalker
       HTML
 
       picker = build_picker(html)
-      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+      target_html = <<~HTML
+        <html>
+          <head>
+            <title>Next stop</title>
+            <meta name="description" content="A soft preview of the next place to wander into.">
+          </head>
+          <body>Next</body>
+        </html>
+      HTML
+
+      with_target_stub(picker, html: target_html) do
         link = picker.next_link
         assert_equal "https://example.org/page1", link.url
         assert_equal "Link", link.label
-        assert_includes link.html, "Next"
+        assert_equal "Next stop", link.title
+        assert_equal "A soft preview of the next place to wander into.", link.description
+        assert_equal "example.org", link.host
       end
     end
 
@@ -59,10 +71,11 @@ module RandomWalker
       HTML
 
       picker = build_picker(html, url: "https://example.com/")
-      with_target_stub(picker, html: "<html><body>Guide page</body></html>") do
+      with_target_stub(picker, html: "<html><head><title>Guide page</title></head><body>Guide page</body></html>") do
         link = picker.next_link
         assert_equal "https://docs.example.com/guide", link.url
         assert_equal "Guide", link.label
+        assert_equal "Guide page", link.title
       end
     end
 
@@ -107,7 +120,7 @@ module RandomWalker
       HTML
 
       picker = build_picker(html)
-      with_target_stub(picker, html: "<html></html>") do
+      with_target_stub(picker, html: "<html><head><title>Docs page</title></head></html>") do
         assert_equal "Docs home", picker.next_link.label
       end
     end
@@ -133,17 +146,26 @@ module RandomWalker
       HTML
 
       picker = build_picker(html)
-      target_html = "<html><body><p>Redirected</p></body></html>"
+      target_html = <<~HTML
+        <html>
+          <head>
+            <title>Redirected page</title>
+            <meta property="og:site_name" content="Redirected Example">
+          </head>
+          <body><p>Redirected preview paragraph with enough detail to stand on its own.</p></body>
+        </html>
+      HTML
 
       with_target_stub(picker, html: target_html, final_url: "https://redirected.example.com/page") do
         link = picker.next_link
         assert_equal "https://redirected.example.com/page", link.url
-        assert_includes link.html, "Redirected"
-        assert_includes link.html, "<base"
+        assert_equal "Redirected page", link.title
+        assert_equal "Redirected Example", link.site_name
+        assert_match(/Redirected preview paragraph/, link.description)
       end
     end
 
-    test "sanitizes returned html" do
+    test "extracts preview metadata from meta tags" do
       html = <<~HTML
         <html><body>
           <a href="https://example.org">Link</a>
@@ -153,7 +175,12 @@ module RandomWalker
       picker = build_picker(html)
       dirty = <<~HTML
         <html>
-          <head><script>alert("x")</script></head>
+          <head>
+            <script>alert("x")</script>
+            <title>Hidden title</title>
+            <meta property="og:title" content="Preview title">
+            <meta name="description" content="Preview description">
+          </head>
           <body onload="alert('test')">
             <h1>Title</h1>
           </body>
@@ -162,13 +189,12 @@ module RandomWalker
 
       with_target_stub(picker, html: dirty) do
         link = picker.next_link
-        refute_includes link.html, "script"
-        refute_includes link.html, "onload"
-        assert_includes link.html, "<base"
+        assert_equal "Preview title", link.title
+        assert_equal "Preview description", link.description
       end
     end
 
-    test "removes javascript urls" do
+    test "falls back to paragraph text when description metadata is missing" do
       html = <<~HTML
         <html><body>
           <a href="https://example.org">Link</a>
@@ -178,16 +204,20 @@ module RandomWalker
       picker = build_picker(html)
       dirty = <<~HTML
         <html>
+          <head>
+            <title>Paragraph fallback</title>
+          </head>
           <body>
-            <a href="javascript:alert('x')">Bad</a>
-            <img src="javascript:alert('y')" />
+            <p>tiny</p>
+            <p>This is the first paragraph with enough detail to become a preview description for the walker interface.</p>
           </body>
         </html>
       HTML
 
       with_target_stub(picker, html: dirty) do
-        sanitized = picker.next_link.html
-        refute_includes sanitized.downcase, "javascript:alert"
+        link = picker.next_link
+        assert_equal "Paragraph fallback", link.title
+        assert_match(/first paragraph with enough detail/, link.description)
       end
     end
 
@@ -212,7 +242,8 @@ module RandomWalker
       picker.stub(:fetch_target_page, fetch_stub) do
         link = picker.next_link
         assert_equal "https://example.org/good", link.url
-        assert_includes link.html, "ok"
+        assert_equal "Good", link.label
+        assert_equal "example.org", link.host
       end
     end
 
@@ -279,7 +310,7 @@ module RandomWalker
 
       picker = build_picker(html, url: "https://example.com/start", mode: :ribbon)
 
-      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+      with_target_stub(picker, html: "<html><head><title>Next</title></head><body>Next</body></html>") do
         assert_equal "https://example.com/story", picker.next_link.url
       end
     end
@@ -301,7 +332,7 @@ module RandomWalker
         force_lucky_jump: true
       )
 
-      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+      with_target_stub(picker, html: "<html><head><title>Next</title></head><body>Next</body></html>") do
         link = picker.next_link
         assert_equal "https://new.example.net/spark", link.url
         assert picker.lucky_jump_triggered?
@@ -319,7 +350,7 @@ module RandomWalker
 
       picker = build_picker(html, url: "https://example.com/start", sweet_click: true)
 
-      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+      with_target_stub(picker, html: "<html><head><title>Next</title></head><body>Next</body></html>") do
         assert_equal "https://example.com/guides/cute-walker-story", picker.next_link.url
       end
     end

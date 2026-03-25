@@ -26,7 +26,7 @@ module RandomWalker
       end
     end
 
-    Link = Data.define(:url, :label, :html)
+    Link = Data.define(:url, :label, :title, :description, :site_name, :host)
 
     USER_AGENT = "RandomWalkerBot/1.0 (+https://example.com)".freeze
     OPEN_TIMEOUT = 5
@@ -41,6 +41,8 @@ module RandomWalker
     SWEET_CLICK_FILE_EXTENSIONS = %w[
       .pdf .zip .png .jpg .jpeg .gif .svg .webp .mp4 .mp3 .wav .webm
     ].freeze
+    PREVIEW_TITLE_LIMIT = 100
+    PREVIEW_DESCRIPTION_LIMIT = 220
 
     def initialize(url:, visited: [], html_fetcher: nil, rng: Random.new, mode: :default, sweet_click: false, lucky_jump: false, force_lucky_jump: false, lucky_jump_chance: LUCKY_JUMP_CHANCE)
       @source_url = parse_source_url(url)
@@ -76,12 +78,15 @@ module RandomWalker
           resolved_uri = coerce_uri(final_uri) || parse_source_url(candidate.url)
           next if visited?(resolved_uri)
           ensure_safe!(resolved_uri)
-          sanitized = sanitize_for_embed(body, resolved_uri)
+          preview = extract_preview(body, resolved_uri, fallback_label: candidate.label)
 
           return Link.new(
             url: resolved_uri.to_s,
             label: candidate.label,
-            html: sanitized
+            title: preview[:title],
+            description: preview[:description],
+            site_name: preview[:site_name],
+            host: preview[:host]
           )
         rescue Error => e
           last_error = e
@@ -111,7 +116,14 @@ module RandomWalker
         absolute = absolutize(node["href"], base)
         next unless absolute
 
-        Link.new(url: absolute.to_s, label: link_label(node), html: nil)
+        Link.new(
+          url: absolute.to_s,
+          label: link_label(node),
+          title: nil,
+          description: nil,
+          site_name: nil,
+          host: nil
+        )
       end
       candidates.uniq { |link| link.url }
     end
@@ -401,53 +413,69 @@ module RandomWalker
       visited_urls.include?(candidate.to_s)
     end
 
-    def sanitize_for_embed(html, base_uri)
+    def extract_preview(html, uri, fallback_label: nil)
       serialized = html.to_s
       raise Error, "Empty response" if serialized.strip.empty?
 
-    document = Nokogiri::HTML(serialized)
+      document = Nokogiri::HTML(serialized)
+      host = uri.host.to_s
 
-      document.css("script, iframe, frame, frameset, object, embed").remove
-      document.css("meta[http-equiv]").each do |node|
-        node.remove if node["http-equiv"].to_s.casecmp("refresh").zero?
-      end
+      {
+        title: truncate_preview_text(
+          preview_title(document, fallback_label: fallback_label, host: host),
+          PREVIEW_TITLE_LIMIT
+        ),
+        description: truncate_preview_text(
+          preview_description(document),
+          PREVIEW_DESCRIPTION_LIMIT
+        ),
+        site_name: clean_preview_text(
+          meta_content(document, "meta[property='og:site_name']") || host
+        ),
+        host: host
+      }
+    end
 
-      document.css("*[href], *[src]").each do |node|
-        %w[href src].each do |attribute|
-          value = node[attribute]
-          next unless value
+    def preview_title(document, fallback_label:, host:)
+      meta_content(document, "meta[property='og:title']") ||
+        meta_content(document, "meta[name='twitter:title']") ||
+        clean_preview_text(document.at("title")&.text) ||
+        clean_preview_text(fallback_label) ||
+        host
+    end
 
-          stripped = value.strip.downcase
-          node.remove_attribute(attribute) if stripped.start_with?("javascript:")
-        end
-      end
+    def preview_description(document)
+      meta_content(document, "meta[name='description']") ||
+        meta_content(document, "meta[property='og:description']") ||
+        meta_content(document, "meta[name='twitter:description']") ||
+        lead_paragraph(document) ||
+        "Open the original page in a new tab to keep wandering."
+    end
 
-      document.traverse do |node|
-        next unless node.element?
+    def meta_content(document, selector)
+      clean_preview_text(document.at(selector)&.[]("content"))
+    end
 
-        node.attribute_nodes.each do |attribute|
-          node.remove_attribute(attribute.name) if attribute.name.downcase.start_with?("on")
-        end
-      end
+    def lead_paragraph(document)
+      paragraphs = document.css("article p, main p, p")
 
-      if base_uri
-        head = document.at("head")
-        unless head
-          head = Nokogiri::XML::Node.new("head", document)
-          document.root&.children&.first ? document.root.children.first.add_previous_sibling(head) : document.root&.add_child(head)
-        end
+      paragraphs
+        .map { |node| clean_preview_text(node.text) }
+        .find { |text| text && text.length >= 40 } ||
+        paragraphs.map { |node| clean_preview_text(node.text) }.find(&:present?)
+    end
 
-        if head
-          base_tag = head.at("base")
-          unless base_tag
-            base_tag = Nokogiri::XML::Node.new("base", document)
-            head.prepend_child(base_tag)
-          end
-          base_tag["href"] = base_uri.to_s
-        end
-      end
+    def clean_preview_text(text)
+      cleaned = text.to_s.gsub(/\s+/, " ").strip
+      cleaned.presence
+    end
 
-      document.to_html
+    def truncate_preview_text(text, limit)
+      value = clean_preview_text(text)
+      return nil unless value
+      return value if value.length <= limit
+
+      "#{value[0, limit - 3].rstrip}..."
     end
 
     def ensure_safe!(candidate)

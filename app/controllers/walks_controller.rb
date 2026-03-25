@@ -12,7 +12,15 @@ class WalksController < ApplicationController
       force_lucky_jump: force_lucky_jump?
     )
     link = picker.next_link
-    render json: { url: link.url, label: link.label, html: link.html, lucky_jump: picker.lucky_jump_triggered? }
+    render json: {
+      url: link.url,
+      label: link.label,
+      title: link.title,
+      description: link.description,
+      site_name: link.site_name,
+      host: link.host,
+      lucky_jump: picker.lucky_jump_triggered?
+    }
   rescue RandomWalker::LinkPicker::Error => e
     payload = { error: e.message }
 

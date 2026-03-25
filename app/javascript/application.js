@@ -8,7 +8,13 @@ const LUCKY_STORAGE_KEY = "randomWalker.luckyJump";
 const MAX_VISITED_URLS_SENT = 20;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const frame = document.getElementById("walker-frame");
+  const previewCard = document.getElementById("walker-preview-card");
+  const previewSite = document.getElementById("walker-preview-site");
+  const previewTitle = document.getElementById("walker-preview-title");
+  const previewDescription = document.getElementById("walker-preview-description");
+  const previewUrl = document.getElementById("walker-preview-url");
+  const previewLabel = document.getElementById("walker-preview-label");
+  const previewLink = document.getElementById("walker-preview-link");
   const nextButton = document.getElementById("walker-next");
   const backButton = document.getElementById("walker-back");
   const stopButton = document.getElementById("walker-stop");
@@ -25,7 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const luckyToggle = document.getElementById("walker-lucky-toggle");
   const luckySummary = document.getElementById("walker-lucky-summary");
   const DEFAULT_CURRENT_URL_TEXT = "No page loaded.";
-  let defaultUrl = frame?.dataset?.defaultUrl || null;
+  const DEFAULT_PREVIEW_SITE = "Preview mode";
+  const DEFAULT_PREVIEW_TITLE = "Pick a start URL and press 1 Walk.";
+  const DEFAULT_PREVIEW_DESCRIPTION = "Random Walker now shows a short discovery preview and sends you to the original site in a new tab.";
+  const DEFAULT_PREVIEW_LABEL = "A selected link will show up here.";
+  const DEFAULT_PREVIEW_NOTE = "Open the original page in a new tab to keep wandering.";
+  let defaultUrl = startInput?.value?.trim() || null;
   const AUTO_INTERVAL = 5000;
   let autoTimer = null;
   let isLoading = false;
@@ -34,15 +45,51 @@ document.addEventListener("DOMContentLoaded", () => {
   let sweetClickMode = false;
   let luckyJumpMode = false;
 
-  if (!frame || !nextButton || !historyList || !status || !autoButton || !stopButton) {
+  if (
+    !previewCard ||
+    !previewSite ||
+    !previewTitle ||
+    !previewDescription ||
+    !previewUrl ||
+    !previewLabel ||
+    !previewLink ||
+    !nextButton ||
+    !historyList ||
+    !status ||
+    !autoButton ||
+    !stopButton
+  ) {
     return;
   }
 
-  frame.removeAttribute("src");
-  frame.srcdoc = "";
-
   const history = [];
   let position = -1;
+
+  const setPreviewLinkState = (url) => {
+    const hasUrl = Boolean(url);
+    previewLink.classList.toggle("is-disabled", !hasUrl);
+    previewLink.setAttribute("aria-disabled", String(!hasUrl));
+    previewLink.tabIndex = hasUrl ? 0 : -1;
+    previewLink.href = hasUrl ? url : "#";
+  };
+
+  const resetPreview = () => {
+    previewSite.textContent = DEFAULT_PREVIEW_SITE;
+    previewTitle.textContent = DEFAULT_PREVIEW_TITLE;
+    previewDescription.textContent = DEFAULT_PREVIEW_DESCRIPTION;
+    previewUrl.textContent = defaultUrl || DEFAULT_CURRENT_URL_TEXT;
+    previewLabel.textContent = DEFAULT_PREVIEW_LABEL;
+    setPreviewLinkState(defaultUrl);
+  };
+
+  const renderPreview = (entry) => {
+    previewSite.textContent = entry.siteName || entry.host || DEFAULT_PREVIEW_SITE;
+    previewTitle.textContent = entry.title || entry.label || entry.url;
+    previewDescription.textContent = entry.description || DEFAULT_PREVIEW_NOTE;
+    previewUrl.textContent = entry.url || DEFAULT_CURRENT_URL_TEXT;
+    previewLabel.textContent = entry.rawLabel ? `Picked via: ${entry.rawLabel}` : "Picked via: unlabeled link";
+    setPreviewLinkState(entry.url);
+  };
 
   const annotateHistoryError = (index, message) => {
     if (index < 0 || index >= history.length) {
@@ -80,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const anchor = document.createElement("a");
       anchor.href = entry.url;
-      anchor.textContent = entry.label || entry.url;
+      anchor.textContent = entry.title || entry.label || entry.url;
       anchor.target = "_blank";
       anchor.rel = "noopener noreferrer";
 
@@ -127,8 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearHistory = () => {
     history.length = 0;
     position = -1;
-    frame.removeAttribute("src");
-    frame.srcdoc = "";
+    resetPreview();
     renderHistory();
     updateControls();
     updateCurrentUrlDisplay();
@@ -319,19 +365,25 @@ document.addEventListener("DOMContentLoaded", () => {
     performStep({ preserveStatus: true });
   };
 
-  const normalizeEntry = ({ url, label, html, error }) => {
+  const normalizeEntry = ({ url, label, title, description, siteName, host, error }) => {
     if (!url) {
       throw new Error("Missing URL.");
     }
 
     const normalizedUrl = new URL(url).toString();
     const trimmedLabel = label ? label.replace(/\s+/g, " ").trim() : "";
-    const finalLabel = trimmedLabel || normalizedUrl;
+    const trimmedTitle = title ? title.replace(/\s+/g, " ").trim() : "";
+    const trimmedDescription = description ? description.replace(/\s+/g, " ").trim() : "";
+    const parsedHost = new URL(normalizedUrl).host;
 
     return {
       url: normalizedUrl,
-      label: finalLabel,
-      html: typeof html === "string" ? html : "",
+      rawLabel: trimmedLabel,
+      label: trimmedLabel || trimmedTitle || normalizedUrl,
+      title: trimmedTitle || trimmedLabel || normalizedUrl,
+      description: trimmedDescription || DEFAULT_PREVIEW_NOTE,
+      siteName: siteName ? siteName.replace(/\s+/g, " ").trim() : parsedHost,
+      host: host ? host.replace(/\s+/g, " ").trim() : parsedHost,
       error: error || ""
     };
   };
@@ -341,8 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    frame.removeAttribute("src");
-    frame.srcdoc = history[position].html || "";
+    renderPreview(history[position]);
     renderHistory();
     updateControls();
     updateCurrentUrlDisplay();
@@ -366,10 +417,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const navigateTo = (entryData, { pushHistory = true } = {}) => {
     try {
       const entry = normalizeEntry(entryData);
-
-      if (!entry.html) {
-        throw new Error("No preview available for this page.");
-      }
 
       if (pushHistory) {
         pushEntry(entry);
@@ -467,7 +514,10 @@ document.addEventListener("DOMContentLoaded", () => {
         {
           url: payload.url,
           label: payload.label,
-          html: payload.html
+          title: payload.title,
+          description: payload.description,
+          siteName: payload.site_name,
+          host: payload.host
         },
         { pushHistory: true }
       );
@@ -479,7 +529,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (sweetClickMode) {
         setStatus("スイートクリック! 読みやすいページを優先して見つけました。", { type: "success" });
       } else if (!preserveStatus || statusWasError) {
-        setStatus("Found a new page!", { type: "success" });
+        setStatus("Found a new preview!", { type: "success" });
       }
     } catch (error) {
       const payload = lastPayload || {};
@@ -559,16 +609,6 @@ document.addEventListener("DOMContentLoaded", () => {
     stopAuto();
   });
 
-  const initial = frame.getAttribute("src");
-  if (initial && initial !== "about:blank") {
-    try {
-      pushEntry(normalizeEntry({ url: initial }));
-      showCurrentEntry();
-    } catch (error) {
-      setStatus("Failed to initialize walker.", { type: "error" });
-    }
-  }
-
   if (startForm && startInput) {
     startForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -587,10 +627,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         defaultUrl = normalized;
         startInput.value = normalized;
-        frame.dataset.defaultUrl = normalized;
         clearHistory();
         stopAuto({ silent: true });
-        setStatus("Start URL updated.", { type: "success" });
+        setStatus("Start URL updated. Preview mode is ready.", { type: "success" });
       } catch (error) {
         setStatus(error.message || "Invalid start URL.", { type: "error" });
       }
@@ -627,10 +666,17 @@ document.addEventListener("DOMContentLoaded", () => {
     stopAuto({ silent: true });
   });
 
+  previewLink.addEventListener("click", (event) => {
+    if (previewLink.getAttribute("aria-disabled") === "true") {
+      event.preventDefault();
+    }
+  });
+
   nextButton.textContent = walkButtonLabel.idle;
   setRibbonMode(readStoredRibbonMode(), { announce: false });
   setSweetClickMode(readStoredSweetClickMode(), { announce: false });
   setLuckyJumpMode(readStoredLuckyJumpMode(), { announce: false });
+  resetPreview();
   updateControls();
   updateCurrentUrlDisplay();
   setStatus(status.textContent.trim());

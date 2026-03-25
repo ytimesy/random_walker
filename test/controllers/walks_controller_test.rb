@@ -4,7 +4,14 @@ require "active_support/cache"
 
 class WalksControllerTest < ActionDispatch::IntegrationTest
   test "returns next url as json" do
-    link = RandomWalker::LinkPicker::Link.new(url: "https://example.org", label: "Example", html: "<html></html>")
+    link = build_link(
+      url: "https://example.org",
+      label: "Example",
+      title: "Example destination",
+      description: "A short preview for the next stop.",
+      site_name: "Example Site",
+      host: "example.org"
+    )
     picker = Minitest::Mock.new
     picker.expect(:next_link, link)
     picker.expect(:lucky_jump_triggered?, false)
@@ -19,7 +26,10 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert_equal "https://example.org", body["url"]
     assert_equal "Example", body["label"]
-    assert_equal "<html></html>", body["html"]
+    assert_equal "Example destination", body["title"]
+    assert_equal "A short preview for the next stop.", body["description"]
+    assert_equal "Example Site", body["site_name"]
+    assert_equal "example.org", body["host"]
   end
 
   test "returns error when picker fails" do
@@ -67,9 +77,10 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
 
     begin
       RandomWalker::LinkPicker.stub(:new, lambda { |url:, **|
+        link = build_link(url: url, title: "Initial destination", host: "initial.example.com")
         picker = Object.new
         picker.define_singleton_method(:next_link) do
-          RandomWalker::LinkPicker::Link.new(url: url, label: nil, html: "<html></html>")
+          link
         end
         picker.define_singleton_method(:lucky_jump_triggered?) { false }
         picker
@@ -80,7 +91,7 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
       assert_response :success
       body = JSON.parse(response.body)
       assert_equal "https://initial.example.com", body["url"]
-      assert_equal "<html></html>", body["html"]
+      assert_equal "Initial destination", body["title"]
     ensure
       Rails.application.config.random_walker[:initial_url] = original
     end
@@ -96,9 +107,10 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
 
     begin
       RandomWalker::LinkPicker.stub(:new, lambda { |url:, **|
+        link = build_link(url: url, title: "Rate limited destination", host: "example.com")
         picker = Object.new
         picker.define_singleton_method(:next_link) do
-          RandomWalker::LinkPicker::Link.new(url: url, label: nil, html: "<html></html>")
+          link
         end
         picker.define_singleton_method(:lucky_jump_triggered?) { false }
         picker
@@ -120,9 +132,10 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "passes ribbon mode to the picker" do
+    link = build_link(url: "https://example.org", label: "Ribbon", title: "Ribbon stop", host: "example.org")
     picker = Object.new
     picker.define_singleton_method(:next_link) do
-      RandomWalker::LinkPicker::Link.new(url: "https://example.org", label: "Ribbon", html: "<html></html>")
+      link
     end
     picker.define_singleton_method(:lucky_jump_triggered?) { false }
 
@@ -137,9 +150,10 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "passes lucky jump options to the picker and returns the flag" do
+    link = build_link(url: "https://example.org/lucky", label: "Lucky", title: "Lucky stop", host: "example.org")
     picker = Object.new
     picker.define_singleton_method(:next_link) do
-      RandomWalker::LinkPicker::Link.new(url: "https://example.org/lucky", label: "Lucky", html: "<html></html>")
+      link
     end
     picker.define_singleton_method(:lucky_jump_triggered?) { true }
 
@@ -164,9 +178,10 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "passes sweet click option to the picker" do
+    link = build_link(url: "https://example.org/sweet", label: "Sweet", title: "Sweet stop", host: "example.org")
     picker = Object.new
     picker.define_singleton_method(:next_link) do
-      RandomWalker::LinkPicker::Link.new(url: "https://example.org/sweet", label: "Sweet", html: "<html></html>")
+      link
     end
     picker.define_singleton_method(:lucky_jump_triggered?) { false }
 
@@ -182,5 +197,20 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :success
+  end
+
+  private
+
+  def build_link(url:, label: nil, title: "Preview title", description: "Preview description", site_name: nil, host: nil)
+    parsed = URI.parse(url)
+
+    RandomWalker::LinkPicker::Link.new(
+      url: url,
+      label: label,
+      title: title,
+      description: description,
+      site_name: site_name || parsed.host,
+      host: host || parsed.host
+    )
   end
 end
