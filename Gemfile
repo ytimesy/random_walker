@@ -10,6 +10,8 @@ gem "sqlite3", ">= 1.4"
 gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
+# Parse fetched HTML in the app's production code
+gem "nokogiri"
 # Use Redis adapter to run Action Cable in production
 # gem "redis", ">= 4.0.1"
 
@@ -47,6 +49,5 @@ group :test do
   gem "selenium-webdriver"
 
   gem "httparty"
-  gem "nokogiri"
   gem "dotenv-rails", groups: %i[ development ]
 end
