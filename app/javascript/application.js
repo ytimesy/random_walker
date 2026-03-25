@@ -2,6 +2,10 @@ const walkButtonLabel = {
   idle: "1 Walk",
   loading: "Walking..."
 };
+const RIBBON_STORAGE_KEY = "randomWalker.ribbonMode";
+const SWEET_STORAGE_KEY = "randomWalker.sweetClick";
+const LUCKY_STORAGE_KEY = "randomWalker.luckyJump";
+const MAX_VISITED_URLS_SENT = 20;
 
 document.addEventListener("DOMContentLoaded", () => {
   const frame = document.getElementById("walker-frame");
@@ -14,12 +18,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const startForm = document.getElementById("walker-start-form");
   const startInput = document.getElementById("walker-start-url");
   const currentUrlValue = document.getElementById("walker-current-url");
+  const ribbonToggle = document.getElementById("walker-ribbon-toggle");
+  const ribbonSummary = document.getElementById("walker-ribbon-summary");
+  const sweetToggle = document.getElementById("walker-sweet-toggle");
+  const sweetSummary = document.getElementById("walker-sweet-summary");
+  const luckyToggle = document.getElementById("walker-lucky-toggle");
+  const luckySummary = document.getElementById("walker-lucky-summary");
   const DEFAULT_CURRENT_URL_TEXT = "No page loaded.";
   let defaultUrl = frame?.dataset?.defaultUrl || null;
   const AUTO_INTERVAL = 5000;
   let autoTimer = null;
   let isLoading = false;
   let failureStreak = 0;
+  let ribbonMode = false;
+  let sweetClickMode = false;
+  let luckyJumpMode = false;
 
   if (!frame || !nextButton || !historyList || !status || !autoButton || !stopButton) {
     return;
@@ -119,6 +132,144 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHistory();
     updateControls();
     updateCurrentUrlDisplay();
+  };
+
+  const readStoredRibbonMode = () => {
+    try {
+      return window.localStorage.getItem(RIBBON_STORAGE_KEY) === "true";
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const readStoredLuckyJumpMode = () => {
+    try {
+      return window.localStorage.getItem(LUCKY_STORAGE_KEY) === "true";
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const readStoredSweetClickMode = () => {
+    try {
+      return window.localStorage.getItem(SWEET_STORAGE_KEY) === "true";
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const persistRibbonMode = () => {
+    try {
+      window.localStorage.setItem(RIBBON_STORAGE_KEY, String(ribbonMode));
+    } catch (error) {
+      // Ignore storage failures in private browsing or restricted contexts.
+    }
+  };
+
+  const persistLuckyJumpMode = () => {
+    try {
+      window.localStorage.setItem(LUCKY_STORAGE_KEY, String(luckyJumpMode));
+    } catch (error) {
+      // Ignore storage failures in private browsing or restricted contexts.
+    }
+  };
+
+  const persistSweetClickMode = () => {
+    try {
+      window.localStorage.setItem(SWEET_STORAGE_KEY, String(sweetClickMode));
+    } catch (error) {
+      // Ignore storage failures in private browsing or restricted contexts.
+    }
+  };
+
+  const updateRibbonUi = () => {
+    if (!ribbonToggle) {
+      return;
+    }
+
+    ribbonToggle.classList.toggle("is-active", ribbonMode);
+    ribbonToggle.setAttribute("aria-pressed", String(ribbonMode));
+
+    if (ribbonSummary) {
+      ribbonSummary.textContent = ribbonMode
+        ? "オン: 同じサイト内と、読みやすいラベル付きリンクを優先します。"
+        : "オフ: 使えるリンク全体をランダム寄りに辿ります。";
+    }
+  };
+
+  const updateLuckyUi = () => {
+    if (!luckyToggle) {
+      return;
+    }
+
+    luckyToggle.classList.toggle("is-active", luckyJumpMode);
+    luckyToggle.setAttribute("aria-pressed", String(luckyJumpMode));
+
+    if (luckySummary) {
+      luckySummary.textContent = luckyJumpMode
+        ? "オン: ときどき新しいドメインを優先して大きく跳びます。"
+        : "オフ: ふつうのルールで次のリンクを探します。";
+    }
+  };
+
+  const updateSweetUi = () => {
+    if (!sweetToggle) {
+      return;
+    }
+
+    sweetToggle.classList.toggle("is-active", sweetClickMode);
+    sweetToggle.setAttribute("aria-pressed", String(sweetClickMode));
+
+    if (sweetSummary) {
+      sweetSummary.textContent = sweetClickMode
+        ? "オン: 読みやすくて、気持ちよく辿れるリンクを優先します。"
+        : "オフ: リンクの選び方は通常ルールに戻ります。";
+    }
+  };
+
+  const setRibbonMode = (enabled, { announce = true } = {}) => {
+    ribbonMode = Boolean(enabled);
+    persistRibbonMode();
+    updateRibbonUi();
+
+    if (announce) {
+      setStatus(
+        ribbonMode
+          ? "りぼんモードON: 同じサイト内と、ラベル付きリンクを優先します。"
+          : "りぼんモードOFF: ふつうのランダム移動に戻りました。",
+        { type: "success" }
+      );
+    }
+  };
+
+  const setLuckyJumpMode = (enabled, { announce = true } = {}) => {
+    luckyJumpMode = Boolean(enabled);
+    persistLuckyJumpMode();
+    updateLuckyUi();
+
+    if (announce) {
+      setStatus(
+        luckyJumpMode
+          ? "ラッキージャンプON: ときどき大胆に別ドメインへ飛びます。"
+          : "ラッキージャンプOFF: 通常のジャンプ規則に戻りました。",
+        { type: "success" }
+      );
+    }
+  };
+
+  const setSweetClickMode = (enabled, { announce = true } = {}) => {
+    sweetClickMode = Boolean(enabled);
+    persistSweetClickMode();
+    updateSweetUi();
+
+    if (announce) {
+      setStatus(
+        sweetClickMode
+          ? "スイートクリックON: 読みやすくて気持ちいいリンクを優先します。"
+          : "スイートクリックOFF: 通常のリンク選択に戻りました。",
+        { type: "success" }
+      );
+    }
   };
 
   const goBack = () => {
@@ -244,7 +395,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return defaultUrl;
   };
 
-  const performStep = async ({ preserveStatus = false } = {}) => {
+  const recentVisitedUrls = () => {
+    return history
+      .map((entry) => entry.url)
+      .filter(Boolean)
+      .slice(-MAX_VISITED_URLS_SENT);
+  };
+
+  const performStep = async ({ preserveStatus = false, forceLuckyJump = false } = {}) => {
     if (isLoading) {
       return;
     }
@@ -259,7 +417,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const url = currentUrl();
-      const endpoint = url ? `/walk?url=${encodeURIComponent(url)}` : "/walk";
+      const params = new URLSearchParams();
+      if (url) {
+        params.set("url", url);
+      }
+      if (ribbonMode) {
+        params.set("mode", "ribbon");
+      }
+      if (sweetClickMode) {
+        params.set("sweet", "true");
+      }
+      if (luckyJumpMode) {
+        params.set("lucky", "true");
+      }
+      if (forceLuckyJump) {
+        params.set("force_lucky_jump", "true");
+      }
+      recentVisitedUrls().forEach((visitedUrl) => {
+        params.append("visited[]", visitedUrl);
+      });
+      const endpoint = params.toString() ? `/walk?${params.toString()}` : "/walk";
       const response = await fetch(endpoint, {
         headers: { Accept: "application/json" }
       });
@@ -297,7 +474,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       failureStreak = 0;
 
-      if (!preserveStatus || statusWasError) {
+      if (payload.lucky_jump) {
+        setStatus("ラッキージャンプ! 新しいドメインへ飛びました。", { type: "success" });
+      } else if (sweetClickMode) {
+        setStatus("スイートクリック! 読みやすいページを優先して見つけました。", { type: "success" });
+      } else if (!preserveStatus || statusWasError) {
         setStatus("Found a new page!", { type: "success" });
       }
     } catch (error) {
@@ -337,7 +518,12 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-        if (autoTimer && movedBack) {
+        if (luckyJumpMode && movedBack) {
+          setStatus("行き止まりだったので、ラッキージャンプを発動します。", { type: "success" });
+          setTimeout(() => {
+            performStep({ preserveStatus: true, forceLuckyJump: true });
+          }, 10);
+        } else if (autoTimer && movedBack) {
           setTimeout(() => {
             performStep({ preserveStatus: true });
           }, 10);
@@ -411,6 +597,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (ribbonToggle) {
+    ribbonToggle.addEventListener("click", () => {
+      setRibbonMode(!ribbonMode);
+    });
+  }
+
+  if (sweetToggle) {
+    sweetToggle.addEventListener("click", () => {
+      setSweetClickMode(!sweetClickMode);
+    });
+  }
+
+  if (luckyToggle) {
+    luckyToggle.addEventListener("click", () => {
+      setLuckyJumpMode(!luckyJumpMode);
+    });
+  }
+
   autoButton.addEventListener("click", () => {
     if (autoTimer) {
       stopAuto();
@@ -424,6 +628,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   nextButton.textContent = walkButtonLabel.idle;
+  setRibbonMode(readStoredRibbonMode(), { announce: false });
+  setSweetClickMode(readStoredSweetClickMode(), { announce: false });
+  setLuckyJumpMode(readStoredLuckyJumpMode(), { announce: false });
   updateControls();
   updateCurrentUrlDisplay();
   setStatus(status.textContent.trim());

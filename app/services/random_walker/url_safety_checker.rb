@@ -18,12 +18,13 @@ module RandomWalker
     KEYWORD_PENALTY = 1
     HIGH_RISK_PENALTY = 5
 
-    def self.evaluate(uri)
-      new(uri).evaluate
+    def self.evaluate(uri, allowed_hosts: nil)
+      new(uri, allowed_hosts: allowed_hosts).evaluate
     end
 
-    def initialize(uri)
+    def initialize(uri, allowed_hosts: nil)
       @uri = normalize(uri)
+      @allowed_hosts = normalize_allowed_hosts(allowed_hosts)
     end
 
     def evaluate
@@ -42,6 +43,7 @@ module RandomWalker
         score += KEYWORD_PENALTY
       end
 
+      high_risk_reasons << "Host is not in the public allowlist" if allowlist_enabled? && !allowed_host?
       high_risk_reasons << "IP address hosts are blocked" if ip_host?
       high_risk_reasons << "Suspicious top-level domain" if suspicious_tld?
 
@@ -58,7 +60,7 @@ module RandomWalker
 
     private
 
-    attr_reader :uri
+    attr_reader :uri, :allowed_hosts
 
     def normalize(candidate)
       return candidate if candidate.is_a?(URI::HTTP) || candidate.is_a?(URI::HTTPS)
@@ -93,6 +95,26 @@ module RandomWalker
     def suspicious_keyword_hits
       haystack = [ uri.host, uri.path, uri.query ].compact.join(" ").downcase
       SUSPICIOUS_KEYWORDS.select { |keyword| haystack.include?(keyword) }
+    end
+
+    def normalize_allowed_hosts(value)
+      Array(value).filter_map do |host|
+        normalized = host.to_s.strip.downcase
+        normalized unless normalized.empty?
+      end
+    end
+
+    def allowlist_enabled?
+      allowed_hosts.any?
+    end
+
+    def allowed_host?
+      host = uri.host.to_s.downcase
+      return false if host.empty?
+
+      allowed_hosts.any? do |allowed|
+        host == allowed || host.end_with?(".#{allowed}")
+      end
     end
   end
 end

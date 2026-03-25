@@ -32,13 +32,28 @@ module RandomWalker
     OPEN_TIMEOUT = 5
     READ_TIMEOUT = 5
     MAX_REDIRECTS = 5
+    MODES = %i[default ribbon].freeze
+    LUCKY_JUMP_CHANCE = 0.15
+    SWEET_CLICK_AVOID_KEYWORDS = %w[
+      login sign-in signin sign-up signup register account cart checkout
+      privacy terms download subscribe
+    ].freeze
+    SWEET_CLICK_FILE_EXTENSIONS = %w[
+      .pdf .zip .png .jpg .jpeg .gif .svg .webp .mp4 .mp3 .wav .webm
+    ].freeze
 
-    def initialize(url:, visited: [], html_fetcher: nil, rng: Random.new)
+    def initialize(url:, visited: [], html_fetcher: nil, rng: Random.new, mode: :default, sweet_click: false, lucky_jump: false, force_lucky_jump: false, lucky_jump_chance: LUCKY_JUMP_CHANCE)
       @source_url = parse_source_url(url)
       @effective_url = @source_url
       @fetcher = html_fetcher || method(:fetch_with_redirects)
       @rng = rng
       @visited_urls = normalize_visited(visited)
+      @mode = normalize_mode(mode)
+      @sweet_click = sweet_click
+      @lucky_jump = lucky_jump
+      @force_lucky_jump = force_lucky_jump
+      @lucky_jump_chance = lucky_jump_chance.to_f
+      @lucky_jump_triggered = false
     end
 
     def next_url
@@ -46,12 +61,13 @@ module RandomWalker
     end
 
     def next_link
+      @lucky_jump_triggered = false
       links = extract_links
       raise Error, "No navigable links found" if links.empty?
 
       last_error = nil
 
-      links.shuffle(random: @rng).each do |candidate|
+      ordered_candidates(links).each do |candidate|
         next if visited?(candidate.url)
 
         begin
@@ -77,7 +93,15 @@ module RandomWalker
 
     private
 
-    attr_reader :source_url, :effective_url, :fetcher, :rng, :visited_urls
+    attr_reader :source_url, :effective_url, :fetcher, :rng, :visited_urls, :mode, :sweet_click, :lucky_jump, :force_lucky_jump, :lucky_jump_chance
+
+    public
+
+    def lucky_jump_triggered?
+      @lucky_jump_triggered
+    end
+
+    private
 
     def extract_links
       document = Nokogiri::HTML(fetch_document)
@@ -90,6 +114,18 @@ module RandomWalker
         Link.new(url: absolute.to_s, label: link_label(node), html: nil)
       end
       candidates.uniq { |link| link.url }
+    end
+
+    def ordered_candidates(links)
+      ordered = if mode == :ribbon
+        same_host, external = links.partition { |link| same_host_candidate?(link) }
+        ribbon_rank(same_host) + ribbon_rank(external)
+      else
+        links.shuffle(random: rng)
+      end
+
+      ordered = apply_sweet_click(ordered)
+      apply_lucky_jump(ordered)
     end
 
     def fetch_document
@@ -134,6 +170,11 @@ module RandomWalker
       return title unless title.empty?
 
       nil
+    end
+
+    def normalize_mode(value)
+      candidate = value.to_s.strip.downcase.presence&.to_sym || :default
+      MODES.include?(candidate) ? candidate : :default
     end
 
     def parse_source_url(raw)
@@ -252,6 +293,108 @@ module RandomWalker
       end.to_set
     end
 
+    def ribbon_rank(links)
+      expressive, fallback = links.partition { |link| expressive_label?(link) }
+      expressive.shuffle(random: rng) + fallback.shuffle(random: rng)
+    end
+
+    def expressive_label?(link)
+      label = link.label.to_s.strip
+      label.length >= 3
+    end
+
+    def same_host_candidate?(link)
+      uri = coerce_uri(link.url)
+      uri&.host == effective_url.host
+    end
+
+    def apply_sweet_click(links)
+      return links unless sweet_click
+
+      links
+        .group_by { |link| sweet_click_score(link) }
+        .sort_by { |score, _items| -score }
+        .flat_map { |_score, items| items.shuffle(random: rng) }
+    end
+
+    def sweet_click_score(link)
+      label = link.label.to_s.gsub(/\s+/, " ").strip
+      uri = coerce_uri(link.url)
+      score = 0
+
+      score += 3 if label.length >= 3
+      score += 2 if same_host_candidate?(link)
+      score += 1 if article_like_path?(uri)
+      score -= 4 if label.empty?
+      score -= 4 if sweet_click_avoid?(label, uri)
+      score -= 3 if file_like_candidate?(uri)
+      score -= 1 if uri&.query.to_s.length.to_i > 24
+      score
+    end
+
+    def article_like_path?(uri)
+      return false unless uri
+
+      path = uri.path.to_s
+      return false if path.empty? || path == "/"
+
+      segments = path.split("/").reject(&:empty?)
+      return false if segments.empty?
+
+      terminal = segments.last.downcase
+      !SWEET_CLICK_AVOID_KEYWORDS.include?(terminal)
+    end
+
+    def sweet_click_avoid?(label, uri)
+      haystack = [ label, uri&.path, uri&.query ].compact.join(" ").downcase
+      SWEET_CLICK_AVOID_KEYWORDS.any? { |keyword| haystack.include?(keyword) }
+    end
+
+    def file_like_candidate?(uri)
+      path = uri&.path.to_s.downcase
+      SWEET_CLICK_FILE_EXTENSIONS.any? { |extension| path.end_with?(extension) }
+    end
+
+    def apply_lucky_jump(links)
+      return links unless lucky_jump_enabled?
+      return links unless trigger_lucky_jump?
+
+      fresh_external, remaining = links.partition { |link| fresh_external_candidate?(link) }
+      familiar_external, same_host = remaining.partition { |link| external_candidate?(link) }
+      return links if fresh_external.empty? && familiar_external.empty?
+
+      @lucky_jump_triggered = true
+      fresh_external + familiar_external + same_host
+    end
+
+    def lucky_jump_enabled?
+      lucky_jump
+    end
+
+    def trigger_lucky_jump?
+      force_lucky_jump || rng.rand < lucky_jump_chance
+    end
+
+    def fresh_external_candidate?(link)
+      uri = coerce_uri(link.url)
+      return false unless uri&.host
+
+      uri.host != effective_url.host && !visited_hosts.include?(uri.host)
+    end
+
+    def external_candidate?(link)
+      uri = coerce_uri(link.url)
+      return false unless uri&.host
+
+      uri.host != effective_url.host
+    end
+
+    def visited_hosts
+      @visited_hosts ||= visited_urls.filter_map do |item|
+        coerce_uri(item)&.host
+      end.to_set
+    end
+
     def visited?(candidate)
       return false unless candidate
 
@@ -308,7 +451,10 @@ module RandomWalker
     end
 
     def ensure_safe!(candidate)
-      result = RandomWalker::UrlSafetyChecker.evaluate(candidate)
+      result = RandomWalker::UrlSafetyChecker.evaluate(
+        candidate,
+        allowed_hosts: Rails.application.config.random_walker[:allowed_hosts]
+      )
       return if result.safe?
 
       raise UnsafeURLError.new(candidate, result.reasons)

@@ -3,9 +3,19 @@ require "uri"
 
 module RandomWalker
   class LinkPickerTest < ActiveSupport::TestCase
-    def build_picker(html, url: "https://example.com/start", rng: Random.new(1))
+    def build_picker(html, url: "https://example.com/start", rng: Random.new(1), mode: :default, visited: [], sweet_click: false, lucky_jump: false, force_lucky_jump: false, lucky_jump_chance: RandomWalker::LinkPicker::LUCKY_JUMP_CHANCE)
       fetcher = ->(_uri) { html }
-      RandomWalker::LinkPicker.new(url: url, html_fetcher: fetcher, rng: rng)
+      RandomWalker::LinkPicker.new(
+        url: url,
+        html_fetcher: fetcher,
+        rng: rng,
+        mode: mode,
+        visited: visited,
+        sweet_click: sweet_click,
+        lucky_jump: lucky_jump,
+        force_lucky_jump: force_lucky_jump,
+        lucky_jump_chance: lucky_jump_chance
+      )
     end
 
     def with_target_stub(picker, html:, final_url: nil, &block)
@@ -242,6 +252,76 @@ module RandomWalker
       assert_match(/Blocked unsafe URL/, error.message)
       assert_equal "https://192.168.1.1/phish", error.candidate
       assert_includes error.reasons.join(";"), "IP address"
+    end
+
+    test "ribbon mode prefers same-host links first" do
+      html = <<~HTML
+        <html><body>
+          <a href="https://outside.example.org/page">Outside</a>
+          <a href="/inside">Inside</a>
+        </body></html>
+      HTML
+
+      picker = build_picker(html, url: "https://example.com/start", mode: :ribbon)
+
+      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+        assert_equal "https://example.com/inside", picker.next_link.url
+      end
+    end
+
+    test "ribbon mode prefers expressive labels over empty labels" do
+      html = <<~HTML
+        <html><body>
+          <a href="/image-only"><img src="/img" alt="" /></a>
+          <a href="/story">Read story</a>
+        </body></html>
+      HTML
+
+      picker = build_picker(html, url: "https://example.com/start", mode: :ribbon)
+
+      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+        assert_equal "https://example.com/story", picker.next_link.url
+      end
+    end
+
+    test "lucky jump prioritizes fresh external domains when triggered" do
+      html = <<~HTML
+        <html><body>
+          <a href="/inside">Inside</a>
+          <a href="https://seen.example.org/known">Seen outside</a>
+          <a href="https://new.example.net/spark">Fresh outside</a>
+        </body></html>
+      HTML
+
+      picker = build_picker(
+        html,
+        url: "https://example.com/start",
+        visited: [ "https://seen.example.org/older" ],
+        lucky_jump: true,
+        force_lucky_jump: true
+      )
+
+      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+        link = picker.next_link
+        assert_equal "https://new.example.net/spark", link.url
+        assert picker.lucky_jump_triggered?
+      end
+    end
+
+    test "sweet click prefers readable article links over utility links" do
+      html = <<~HTML
+        <html><body>
+          <a href="/login">Login</a>
+          <a href="/guides/cute-walker-story">Read the cute walker story</a>
+          <a href="/download-guide.pdf">Download guide</a>
+        </body></html>
+      HTML
+
+      picker = build_picker(html, url: "https://example.com/start", sweet_click: true)
+
+      with_target_stub(picker, html: "<html><body>Next</body></html>") do
+        assert_equal "https://example.com/guides/cute-walker-story", picker.next_link.url
+      end
     end
   end
 end

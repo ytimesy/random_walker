@@ -10,6 +10,9 @@ Rails.application.routes.draw do
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
 
   resource :walk, only: :show
+  get "pricing" => "pages#pricing", as: :pricing
+  get "privacy" => "pages#privacy", as: :privacy
+  get "terms" => "pages#terms", as: :terms
 
   # Defines the root path route ("/")
   root "pages#home"

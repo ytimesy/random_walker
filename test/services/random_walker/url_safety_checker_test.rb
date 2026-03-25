@@ -30,5 +30,24 @@ module RandomWalker
       assert_includes result.reasons.join(" "), "URL must use HTTPS"
       assert_includes result.reasons.join(" "), "suspicious terms"
     end
+
+    test "allowlist can restrict public hosts" do
+      result = UrlSafetyChecker.evaluate(
+        "https://outside.example.com/path",
+        allowed_hosts: [ "qiita.com", "example.org" ]
+      )
+
+      refute result.safe?
+      assert_includes result.reasons.join(" "), "public allowlist"
+    end
+
+    test "allowlist accepts matching subdomains" do
+      result = UrlSafetyChecker.evaluate(
+        "https://sub.qiita.com/path",
+        allowed_hosts: [ "qiita.com" ]
+      )
+
+      assert result.safe?
+    end
   end
 end

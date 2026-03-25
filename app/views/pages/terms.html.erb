@@ -1,0 +1,39 @@
+<% content_for :title, "Terms | Random Walker" %>
+<% content_for :head do %>
+  <meta name="description" content="Terms of service draft for Random Walker, covering acceptable use, public launch rules, and supporter billing expectations.">
+<% end %>
+
+<div class="walker-legal-shell">
+  <header class="walker-legal-hero">
+    <p class="walker-kicker">Terms</p>
+    <h1>Terms of service draft for public release</h1>
+    <p>
+      これも公開前のたたき台です。課金開始前には、返金方針と有料プランの自動更新条件を明文化してください。
+    </p>
+    <div class="walker-link-row">
+      <%= link_to "Back home", root_path, class: "walker-text-link" %>
+      <%= link_to "Privacy", privacy_path, class: "walker-text-link" %>
+    </div>
+  </header>
+
+  <section class="walker-legal-card">
+    <h2>Acceptable use</h2>
+    <ul class="walker-legal-list">
+      <li>本サービスを違法、攻撃的、または過剰な自動アクセスに利用しないこと</li>
+      <li>安全制御やホスト制限を回避しないこと</li>
+      <li>第三者の権利を侵害する用途に使わないこと</li>
+    </ul>
+
+    <h2>Service availability</h2>
+    <ul class="walker-legal-list">
+      <li>機能や公開先ドメインは予告なく変更されることがあります</li>
+      <li>保守、障害、abuse 対応のため一時停止する場合があります</li>
+    </ul>
+
+    <h2>Paid plans</h2>
+    <ul class="walker-legal-list">
+      <li>サポータープランは今後 Stripe などの決済事業者を通じて提供する想定です</li>
+      <li>有料特典の内容、料金、更新条件は申込時点の案内に従います</li>
+    </ul>
+  </section>
+</div>

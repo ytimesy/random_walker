@@ -1,0 +1,64 @@
+<svg width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Moe Walker-chan</title>
+  <desc>Self-made mascot illustration for the Random Walker app.</desc>
+  <defs>
+    <linearGradient id="bgGlow" x1="120" y1="92" x2="542" y2="548" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD8EB"/>
+      <stop offset="1" stop-color="#FFF1C9"/>
+    </linearGradient>
+    <linearGradient id="hairGrad" x1="248" y1="145" x2="387" y2="377" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF97C3"/>
+      <stop offset="1" stop-color="#FF6EA8"/>
+    </linearGradient>
+    <linearGradient id="dressGrad" x1="241" y1="365" x2="402" y2="543" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF87BC"/>
+      <stop offset="1" stop-color="#FFB566"/>
+    </linearGradient>
+    <linearGradient id="ribbonGrad" x1="227" y1="390" x2="343" y2="487" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6CD2FF"/>
+      <stop offset="1" stop-color="#8CE6D8"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="320" cy="320" r="230" fill="url(#bgGlow)"/>
+  <circle cx="182" cy="205" r="44" fill="#FFFFFF" fill-opacity="0.62"/>
+  <circle cx="474" cy="202" r="34" fill="#FFFFFF" fill-opacity="0.56"/>
+  <circle cx="435" cy="122" r="16" fill="#FFF6FB"/>
+  <circle cx="206" cy="121" r="14" fill="#FFF6FB"/>
+
+  <path d="M226 184L189 118L262 142L226 184Z" fill="#FF8ABC"/>
+  <path d="M415 184L452 118L379 142L415 184Z" fill="#FF8ABC"/>
+  <path d="M320 155C251 155 205 200 205 275V332C205 407 257 450 320 450C383 450 435 407 435 332V275C435 200 389 155 320 155Z" fill="url(#hairGrad)"/>
+  <path d="M229 276C229 209 272 182 320 182C368 182 411 209 411 276V325C411 385 372 424 320 424C268 424 229 385 229 325V276Z" fill="#FFEAF2"/>
+  <path d="M271 292C271 274 286 261 304 261H336C354 261 369 274 369 292V309C369 347 347 373 320 373C293 373 271 347 271 309V292Z" fill="#FFF6FA"/>
+  <ellipse cx="279" cy="293" rx="13" ry="17" fill="#7B3E5F"/>
+  <ellipse cx="361" cy="293" rx="13" ry="17" fill="#7B3E5F"/>
+  <ellipse cx="284" cy="297" rx="4" ry="5" fill="#FFFFFF"/>
+  <ellipse cx="366" cy="297" rx="4" ry="5" fill="#FFFFFF"/>
+  <ellipse cx="256" cy="325" rx="13" ry="8" fill="#FFB4CD" fill-opacity="0.9"/>
+  <ellipse cx="384" cy="325" rx="13" ry="8" fill="#FFB4CD" fill-opacity="0.9"/>
+  <path d="M314 331C317 334 323 334 326 331" stroke="#D95A8F" stroke-width="5" stroke-linecap="round"/>
+  <path d="M305 346C314 353 326 353 335 346" stroke="#D95A8F" stroke-width="5" stroke-linecap="round"/>
+
+  <path d="M246 239C264 214 290 198 320 198C350 198 376 214 394 239" stroke="#FFB1CF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M243 359C248 410 233 455 210 489" stroke="#FF7FB2" stroke-width="22" stroke-linecap="round"/>
+  <path d="M397 359C392 410 407 455 430 489" stroke="#FF7FB2" stroke-width="22" stroke-linecap="round"/>
+  <path d="M208 482C197 505 176 521 152 528" stroke="#6CD2FF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M432 482C443 505 464 521 488 528" stroke="#6CD2FF" stroke-width="16" stroke-linecap="round"/>
+
+  <path d="M241 418C250 382 283 358 320 358C357 358 390 382 399 418L416 493C419 506 409 518 396 518H244C231 518 221 506 224 493L241 418Z" fill="url(#dressGrad)"/>
+  <path d="M262 412C273 391 294 379 320 379C346 379 367 391 378 412" stroke="#FFF2F8" stroke-width="10" stroke-linecap="round"/>
+  <path d="M280 413H360L350 504H290L280 413Z" fill="#FFF6FB" fill-opacity="0.88"/>
+  <path d="M271 420L320 448L369 420L320 395L271 420Z" fill="url(#ribbonGrad)"/>
+  <circle cx="320" cy="420" r="13" fill="#FFF6FB"/>
+
+  <path d="M240 436L190 405C178 398 164 405 162 419L156 465C154 479 168 490 181 485L238 462L240 436Z" fill="#FFF3F9"/>
+  <path d="M400 436L450 405C462 398 476 405 478 419L484 465C486 479 472 490 459 485L402 462L400 436Z" fill="#FFF3F9"/>
+  <path d="M233 446L171 435" stroke="#FF8BBC" stroke-width="12" stroke-linecap="round"/>
+  <path d="M407 446L469 435" stroke="#FF8BBC" stroke-width="12" stroke-linecap="round"/>
+
+  <path d="M449 150L463 180L495 184L471 206L477 238L449 222L421 238L427 206L403 184L435 180L449 150Z" fill="#7DDCC8"/>
+  <path d="M179 167L187 183L204 186L192 198L195 216L179 208L163 216L166 198L154 186L171 183L179 167Z" fill="#FFD46D"/>
+  <path d="M486 282L493 298L510 301L498 313L501 330L486 322L470 330L473 313L461 301L478 298L486 282Z" fill="#FFF6FB"/>
+  <path d="M141 274L149 290L166 293L154 305L157 322L141 314L125 322L128 305L116 293L133 290L141 274Z" fill="#FFF6FB"/>
+</svg>

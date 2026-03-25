@@ -1,0 +1,40 @@
+<% content_for :title, "Privacy | Random Walker" %>
+<% content_for :head do %>
+  <meta name="description" content="Privacy policy for Random Walker, covering URL processing, logs, analytics, and support contact.">
+<% end %>
+
+<div class="walker-legal-shell">
+  <header class="walker-legal-hero">
+    <p class="walker-kicker">Privacy</p>
+    <h1>Privacy policy draft for a public launch</h1>
+    <p>
+      これは公開前のたたき台です。実際に収益化する前に、利用中の分析・決済・メール配信に合わせて更新してください。
+    </p>
+    <div class="walker-link-row">
+      <%= link_to "Back home", root_path, class: "walker-text-link" %>
+      <%= link_to "Terms", terms_path, class: "walker-text-link" %>
+    </div>
+  </header>
+
+  <section class="walker-legal-card">
+    <h2>What this app may process</h2>
+    <ul class="walker-legal-list">
+      <li>ユーザーが入力した開始 URL</li>
+      <li>アクセスログ、IP アドレス、利用端末情報</li>
+      <li>不正利用対策のためのレート制限情報</li>
+      <li>将来導入する分析、決済、問い合わせ情報</li>
+    </ul>
+
+    <h2>Why it is processed</h2>
+    <ul class="walker-legal-list">
+      <li>ランダム遷移機能の提供</li>
+      <li>安全性の確認と abuse 対策</li>
+      <li>障害調査、改善、課金対応</li>
+    </ul>
+
+    <h2>Contact</h2>
+    <p>
+      Privacy related questions: <%= mail_to Rails.application.config.random_walker[:support_email] %>
+    </p>
+  </section>
+</div>

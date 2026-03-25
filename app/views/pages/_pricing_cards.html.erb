@@ -1,0 +1,28 @@
+<div class="walker-pricing-grid">
+  <% plans.each_with_index do |plan, index| %>
+    <article class="walker-price-card<%= " is-featured" if index == 1 %>">
+      <% if index == 1 %>
+        <p class="walker-price-badge">Best first paid tier</p>
+      <% end %>
+
+      <p class="walker-price-name"><%= plan[:name] %></p>
+      <p class="walker-price-value"><%= plan[:price] %></p>
+      <p class="walker-price-tone"><%= plan[:tone] %></p>
+
+      <ul class="walker-price-list">
+        <% plan[:features].each do |feature| %>
+          <li><%= feature %></li>
+        <% end %>
+      </ul>
+    </article>
+  <% end %>
+</div>
+
+<div class="walker-pricing-actions">
+  <a href="<%= support_url %>" class="walker-cta-link" target="_blank" rel="noopener">
+    Open supporter CTA
+  </a>
+  <p class="walker-pricing-note">
+    Start with Stripe Checkout and Customer Portal before building a custom billing flow.
+  </p>
+</div>

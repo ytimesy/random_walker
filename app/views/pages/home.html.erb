@@ -1,7 +1,43 @@
-<header class="walker-header">
-  <div class="walker-header-inner">
-    <div class="walker-header-top">
-      <h1>Random Walker</h1>
+<% content_for :title, "Random Walker | Cute internet wandering that can actually ship" %>
+<% content_for :head do %>
+  <meta name="description" content="Random Walker is a cute discovery app for guided internet wandering, with supporter pricing, public-safe launch controls, and a mascot-led brand.">
+<% end %>
+
+<div class="walker-shell">
+  <div class="walker-bg walker-bg-left" aria-hidden="true"></div>
+  <div class="walker-bg walker-bg-right" aria-hidden="true"></div>
+
+  <header class="walker-hero">
+    <div class="walker-hero-copy">
+      <div class="walker-hero-body">
+        <div class="walker-hero-story">
+          <p class="walker-kicker">Dreamy Internet Drift</p>
+          <h1>Random Walker</h1>
+          <p class="walker-lead">
+            かわいく、きまぐれに、リンクの海をおさんぽするためのランダム・ブラウジングルーム。
+          </p>
+
+          <div class="walker-charms" aria-hidden="true">
+            <span>りぼんモード</span>
+            <span>スイートクリック</span>
+            <span>ラッキージャンプ</span>
+          </div>
+        </div>
+
+        <figure class="walker-mascot-card">
+          <p class="walker-mascot-quote">今日はどこへ飛ぶ?</p>
+          <%= image_tag "moe-walker-chan.svg", class: "walker-mascot-image", alt: "Random Walker の自作マスコットイラスト" %>
+          <figcaption class="walker-mascot-copy">
+            <strong>Walker-chan</strong>
+            <span>Ribbon guide for your lucky jump.</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <div class="walker-panel">
+      <div class="walker-panel-badge">Moe Moe Navigator</div>
+
       <form id="walker-start-form" class="walker-start" autocomplete="off">
         <label for="walker-start-url">Start from this URL</label>
         <div class="walker-start-fields">
@@ -17,13 +53,34 @@
           <button type="submit">Set</button>
         </div>
       </form>
-    </div>
 
-    <div class="walker-header-actions">
       <div class="walker-controls">
         <button type="button" id="walker-next">1 Walk</button>
         <button type="button" id="walker-stop" disabled>Stop</button>
         <button type="button" id="walker-auto" aria-pressed="false">Auto walk</button>
+      </div>
+
+      <div class="walker-mode-strip">
+        <button type="button" id="walker-ribbon-toggle" class="walker-ribbon-toggle" aria-pressed="false">
+          <span class="walker-ribbon-toggle-kicker">りぼんモード</span>
+          <span id="walker-ribbon-summary" class="walker-ribbon-summary">
+            同じサイト内と、ラベル付きリンクを優先します。
+          </span>
+        </button>
+
+        <button type="button" id="walker-sweet-toggle" class="walker-sweet-toggle" aria-pressed="false">
+          <span class="walker-sweet-toggle-kicker">スイートクリック</span>
+          <span id="walker-sweet-summary" class="walker-sweet-summary">
+            読みやすくて気持ちいいリンクを優先します。
+          </span>
+        </button>
+
+        <button type="button" id="walker-lucky-toggle" class="walker-lucky-toggle" aria-pressed="false">
+          <span class="walker-lucky-toggle-kicker">ラッキージャンプ</span>
+          <span id="walker-lucky-summary" class="walker-lucky-summary">
+            ときどき大胆に別ドメインへ飛びます。
+          </span>
+        </button>
       </div>
 
       <div class="walker-header-meta">
@@ -31,28 +88,120 @@
           Press "1 Walk" to begin wandering.
         </p>
         <p class="walker-current-url" aria-live="polite">
-          <span class="walker-current-url-label">Viewing:</span>
+          <span class="walker-current-url-label">Viewing</span>
           <span id="walker-current-url" class="walker-current-url-value">No page loaded.</span>
         </p>
       </div>
     </div>
-  </div>
-</header>
+  </header>
 
-<main class="walker-main">
-  <div class="walker-view">
-    <iframe
-      src="about:blank"
-      title="Current site"
-      class="walker-frame"
-      id="walker-frame"
-      sandbox="allow-popups allow-popups-to-escape-sandbox"
-      data-default-url="<%= @initial_url %>"
-    ></iframe>
-  </div>
+  <main class="walker-main">
+    <section class="walker-view-card">
+      <div class="walker-view-card-header">
+        <div>
+          <p class="walker-card-kicker">Live Preview</p>
+          <h2>Wander Window</h2>
+        </div>
+        <div class="walker-lights" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
 
-  <section class="walker-history" aria-label="Visited URLs">
-    <h2>History</h2>
-    <ol id="walker-history-list"></ol>
+      <div class="walker-view">
+        <iframe
+          src="about:blank"
+          title="Current site"
+          class="walker-frame"
+          id="walker-frame"
+          sandbox="allow-popups allow-popups-to-escape-sandbox"
+          data-default-url="<%= @initial_url %>"
+        ></iframe>
+      </div>
+    </section>
+
+    <aside class="walker-history" aria-label="Visited URLs">
+      <div class="walker-history-header">
+        <p class="walker-card-kicker">Trail Log</p>
+        <h2>History</h2>
+      </div>
+      <p class="walker-history-note">
+        おさんぽの足あとをここにストックします。
+      </p>
+      <ol id="walker-history-list"></ol>
+    </aside>
+  </main>
+
+  <section class="walker-launch-grid" aria-label="Launch plan">
+    <article class="walker-launch-card">
+      <p class="walker-card-kicker">Public Launch</p>
+      <h2>Ship in curated mode first</h2>
+      <p>
+        一般公開の初期段階では、自由入力よりも公開先ドメインを絞る方が現実的です。
+        収益化の前に、まず事故らない公開運用を作ります。
+      </p>
+      <% if @launch_domains.any? %>
+        <p class="walker-launch-inline-label">Current allowlist</p>
+        <ul class="walker-inline-list">
+          <% @launch_domains.each do |domain| %>
+            <li><%= domain %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="walker-launch-note">
+          `RANDOM_WALKER_ALLOWED_HOSTS` を設定すると、公開モードを curated destinations にできます。
+        </p>
+      <% end %>
+    </article>
+
+    <article class="walker-launch-card">
+      <p class="walker-card-kicker">Monetization</p>
+      <h2>Sell support, themes, and saved routes</h2>
+      <p>
+        広告より、低単価のサポータープランが合います。保存機能、限定スキン、テーマ別ルートを有料化の軸にします。
+      </p>
+      <a href="#pricing" class="walker-text-link">See pricing ideas</a>
+    </article>
+
+    <article class="walker-launch-card">
+      <p class="walker-card-kicker">Trust</p>
+      <h2>Make it look like a real product</h2>
+      <p>
+        料金だけでなく、プライバシー、利用規約、問い合わせ導線を出してはじめて「公開できるアプリ」になります。
+      </p>
+      <div class="walker-link-row">
+        <%= link_to "Privacy", privacy_path, class: "walker-text-link" %>
+        <%= link_to "Terms", terms_path, class: "walker-text-link" %>
+      </div>
+    </article>
   </section>
-</main>
+
+  <section class="walker-pricing-section" id="pricing" aria-labelledby="pricing-title">
+    <div class="walker-section-heading">
+      <p class="walker-kicker">Pricing</p>
+      <h2 id="pricing-title">A pricing shape this app can plausibly sell</h2>
+      <p>
+        最初は Stripe Checkout で十分です。無料で触らせて、かわいい体験の延長にある convenience を課金対象にします。
+      </p>
+    </div>
+
+    <%= render "pricing_cards", plans: @plans, support_url: @support_url %>
+  </section>
+
+  <footer class="walker-site-footer">
+    <div>
+      <p class="walker-footer-title">Random Walker</p>
+      <p class="walker-footer-copy">
+        Cute discovery app, built to become a real public product.
+      </p>
+    </div>
+
+    <nav class="walker-footer-links" aria-label="Footer">
+      <%= link_to "Pricing", pricing_path %>
+      <%= link_to "Privacy", privacy_path %>
+      <%= link_to "Terms", terms_path %>
+      <%= mail_to @support_email, "Contact" %>
+    </nav>
+  </footer>
+</div>
