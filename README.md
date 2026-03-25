@@ -20,7 +20,7 @@ This repo includes a [`render.yaml`](./render.yaml) for Render Blueprint deploys
 4. Set `RANDOM_WALKER_SUPPORT_EMAIL` when prompted.
 5. Deploy.
 
-The web service uses the existing `Dockerfile`, starts via [`bin/render-start`](./bin/render-start), and exposes the Rails health endpoint at `/up`.
+The web service uses Render's Ruby runtime, builds via [`bin/render-build`](./bin/render-build), starts via [`bin/render-start`](./bin/render-start), and exposes the Rails health endpoint at `/up`.
 
 Notes:
 
