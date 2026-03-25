@@ -7,5 +7,4 @@ if [ "${RANDOM_WALKER_USE_DATABASE_URL:-0}" != "1" ]; then
   unset DATABASE_URL
 fi
 
-bundle exec rails db:prepare
 exec bundle exec rails server -b 0.0.0.0 -p "${PORT:-10000}"
