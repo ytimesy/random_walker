@@ -769,6 +769,7 @@ body::before {
 }
 
 .walker-launch-grid,
+.walker-mission-card,
 .walker-supporter-banner,
 .walker-pricing-section,
 .walker-site-footer,
@@ -789,6 +790,36 @@ body::before {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   padding: 1rem;
+}
+
+.walker-mission-card {
+  padding: 1.35rem;
+}
+
+.walker-mission-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.walker-mission-stat {
+  padding: 1.1rem;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 246, 251, 0.98), rgba(255, 252, 245, 0.95));
+  border: 1px solid rgba(198, 114, 153, 0.16);
+  box-shadow: 0 18px 32px rgba(236, 168, 195, 0.14);
+}
+
+.walker-mission-value {
+  margin: 0.6rem 0 0;
+  font-family: var(--walker-font-display);
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  color: #5e2c4a;
+}
+
+.walker-mission-note {
+  color: var(--walker-ink-soft);
+  line-height: 1.7;
 }
 
 .walker-supporter-banner {
@@ -1156,6 +1187,10 @@ body::before {
   }
 
   .walker-preview-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .walker-mission-grid {
     grid-template-columns: 1fr;
   }
 

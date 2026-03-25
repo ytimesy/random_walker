@@ -177,6 +177,60 @@
     </aside>
   </main>
 
+  <section class="walker-mission-card" aria-labelledby="walker-mission-title">
+    <div class="walker-section-heading">
+      <p class="walker-kicker">1 Yen Mission</p>
+      <h2 id="walker-mission-title">Turn every visitor into 1 yen worth of support demand</h2>
+      <p>
+        1円ずつ直接決済するのではなく、訪問者1人ごとに1円相当の支援ターゲットを積み上げます。
+        サポーターは次の100人分をまとめて支援し、利用者は無料で体験できます。
+      </p>
+    </div>
+
+    <div class="walker-mission-grid">
+      <article class="walker-mission-stat">
+        <p class="walker-card-kicker">Visitors Counted</p>
+        <p class="walker-mission-value" id="walker-mission-visitors"><%= @mission[:visitors] %></p>
+        <p class="walker-mission-note">Unique browsers counted toward the mission.</p>
+      </article>
+
+      <article class="walker-mission-stat">
+        <p class="walker-card-kicker">Revenue Target</p>
+        <p class="walker-mission-value" id="walker-mission-target"><%= @mission[:revenue_target_yen] %> yen</p>
+        <p class="walker-mission-note">1 visitor = <%= @mission[:visitor_value_yen] %> yen equivalent.</p>
+      </article>
+
+      <article class="walker-mission-stat">
+        <p class="walker-card-kicker">Support Clicks</p>
+        <p class="walker-mission-value" id="walker-mission-support-clicks"><%= @mission[:support_clicks] %></p>
+        <p class="walker-mission-note">Signals that the support CTA is working.</p>
+      </article>
+
+      <article class="walker-mission-stat">
+        <p class="walker-card-kicker">Saved Trails</p>
+        <p class="walker-mission-value" id="walker-mission-trail-saves"><%= @mission[:trail_saves] %></p>
+        <p class="walker-mission-note">Saved route actions that increase repeat value.</p>
+      </article>
+    </div>
+
+    <div class="walker-supporter-actions">
+      <a
+        href="<%= @support_url %>"
+        class="walker-cta-link"
+        id="walker-mission-support-link"
+        data-engagement-type="support_click"
+        target="_blank"
+        rel="noopener"
+      >
+        Cover the next <span id="walker-mission-next-cover"><%= @mission[:suggested_support_visitors] %></span> visitors
+      </a>
+      <p class="walker-mission-note">
+        Suggested support block:
+        <strong id="walker-mission-suggested-support"><%= @mission[:suggested_support_yen] %> yen</strong>
+      </p>
+    </div>
+  </section>
+
   <section class="walker-supporter-banner" aria-labelledby="walker-supporter-title">
     <div class="walker-supporter-copy">
       <p class="walker-kicker">Supporter Push</p>
@@ -187,7 +241,13 @@
       </p>
     </div>
     <div class="walker-supporter-actions">
-      <a href="<%= @support_url %>" class="walker-cta-link" target="_blank" rel="noopener">
+      <a
+        href="<%= @support_url %>"
+        class="walker-cta-link"
+        data-engagement-type="support_click"
+        target="_blank"
+        rel="noopener"
+      >
         Become a supporter
       </a>
       <%= link_to "See pricing", pricing_path, class: "walker-text-link" %>

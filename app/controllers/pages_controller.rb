@@ -1,10 +1,15 @@
 class PagesController < ApplicationController
   def home
     config = Rails.application.config.random_walker
+    RandomWalker::OneYenMission.track_visit!(cookies)
     @initial_url = config[:initial_url]
     @launch_domains = config[:allowed_hosts]
     @support_email = config[:support_email]
     @support_url = config[:support_url] || "mailto:#{@support_email}?subject=Random%20Walker%20Supporter"
+    @mission = RandomWalker::OneYenMission.snapshot(
+      visitor_value_yen: config[:visitor_value_yen],
+      support_batch_yen: config[:support_batch_yen]
+    )
     @plans = [
       {
         name: "Free Drift",

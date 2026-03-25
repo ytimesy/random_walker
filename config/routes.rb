@@ -9,6 +9,7 @@ Rails.application.routes.draw do
   get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
 
+  resource :engagement_event, only: :create
   resource :walk, only: :show
   get "pricing" => "pages#pricing", as: :pricing
   get "privacy" => "pages#privacy", as: :privacy

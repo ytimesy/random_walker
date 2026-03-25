@@ -17,6 +17,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const previewUrl = document.getElementById("walker-preview-url");
   const previewLabel = document.getElementById("walker-preview-label");
   const previewLink = document.getElementById("walker-preview-link");
+  const missionVisitors = document.getElementById("walker-mission-visitors");
+  const missionTarget = document.getElementById("walker-mission-target");
+  const missionSupportClicks = document.getElementById("walker-mission-support-clicks");
+  const missionTrailSaves = document.getElementById("walker-mission-trail-saves");
+  const missionNextCover = document.getElementById("walker-mission-next-cover");
+  const missionSuggestedSupport = document.getElementById("walker-mission-suggested-support");
   const nextButton = document.getElementById("walker-next");
   const backButton = document.getElementById("walker-back");
   const stopButton = document.getElementById("walker-stop");
@@ -29,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const startForm = document.getElementById("walker-start-form");
   const startInput = document.getElementById("walker-start-url");
   const currentUrlValue = document.getElementById("walker-current-url");
+  const supportLinks = Array.from(document.querySelectorAll("[data-engagement-type='support_click']"));
   const ribbonToggle = document.getElementById("walker-ribbon-toggle");
   const ribbonSummary = document.getElementById("walker-ribbon-summary");
   const sweetToggle = document.getElementById("walker-sweet-toggle");
@@ -73,6 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const history = [];
   let position = -1;
   let savedTrails = [];
+
+  const csrfToken = document.querySelector("meta[name='csrf-token']")?.content || "";
 
   const setPreviewLinkState = (url) => {
     const hasUrl = Boolean(url);
@@ -151,6 +160,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
       historyList.appendChild(item);
     });
+  };
+
+  const updateMissionUi = (mission) => {
+    if (!mission || typeof mission !== "object") {
+      return;
+    }
+
+    if (missionVisitors) {
+      missionVisitors.textContent = String(mission.visitors ?? 0);
+    }
+
+    if (missionTarget) {
+      missionTarget.textContent = `${mission.revenue_target_yen ?? 0} yen`;
+    }
+
+    if (missionSupportClicks) {
+      missionSupportClicks.textContent = String(mission.support_clicks ?? 0);
+    }
+
+    if (missionTrailSaves) {
+      missionTrailSaves.textContent = String(mission.trail_saves ?? 0);
+    }
+
+    if (missionNextCover) {
+      missionNextCover.textContent = String(mission.suggested_support_visitors ?? 0);
+    }
+
+    if (missionSuggestedSupport) {
+      missionSuggestedSupport.textContent = `${mission.suggested_support_yen ?? 0} yen`;
+    }
+  };
+
+  const postEngagementEvent = async (eventType) => {
+    if (!eventType) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/engagement_event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRF-Token": csrfToken
+        },
+        body: JSON.stringify({ event_type: eventType })
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = await response.json();
+      updateMissionUi(payload.mission);
+    } catch (error) {
+      // Ignore analytics-style tracking failures.
+    }
   };
 
   const formatSavedTrailTime = (value) => {
@@ -381,6 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (persistSavedTrails()) {
       renderSavedTrails();
+      postEngagementEvent("trail_save");
       setStatus(`Saved trail: ${snapshot.name}`, { type: "success" });
     }
   };
@@ -393,6 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     downloadTrail(snapshot);
+    postEngagementEvent("trail_export");
     setStatus("Current trail exported as JSON.", { type: "success" });
   };
 
@@ -886,6 +954,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  supportLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      postEngagementEvent(link.dataset.engagementType);
+    });
+  });
+
   savedList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action][data-trail-id]");
     if (!button) {
@@ -905,6 +979,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (button.dataset.action === "export") {
       downloadTrail(trail);
+      postEngagementEvent("trail_export");
       setStatus(`Exported saved trail: ${trail.name}`, { type: "success" });
       return;
     }
