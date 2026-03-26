@@ -22,14 +22,14 @@ Rails.application.configure do
   # config.require_master_key = true
   config.secret_key_base = ENV["SECRET_KEY_BASE"].presence || SecureRandom.hex(64)
 
-  # Disable serving static files from `public/`, relying on NGINX/Apache to do so instead.
-  config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
+  # Render serves this Rails app directly, so always serve precompiled assets.
+  config.public_file_server.enabled = true
 
   # Compress CSS using a preprocessor.
   # config.assets.css_compressor = :sass
 
-  # Do not fall back to assets pipeline if a precompiled asset is missed.
-  config.assets.compile = false
+  # Keep a fallback path in case the native runtime misses a precompile step.
+  config.assets.compile = true
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
