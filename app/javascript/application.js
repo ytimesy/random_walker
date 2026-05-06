@@ -36,8 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const luckyToggle = document.getElementById("walker-lucky-toggle");
   const luckySummary = document.getElementById("walker-lucky-summary");
   const DEFAULT_CURRENT_URL_TEXT = "No page loaded.";
-  const DEFAULT_PREVIEW_SITE = "Preview mode";
-  const DEFAULT_PREVIEW_TITLE = "Pick a start URL and press 1 Walk.";
+  const DEFAULT_PREVIEW_SITE = "Destination URL";
   const DEFAULT_PREVIEW_DESCRIPTION = "Random Walker now shows a short discovery preview and sends you to the original site in a new tab.";
   const DEFAULT_PREVIEW_LABEL = "A selected link will show up here.";
   const DEFAULT_PREVIEW_NOTE = "Open the original page in a new tab to keep wandering.";
@@ -85,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const resetPreview = () => {
     previewSite.textContent = DEFAULT_PREVIEW_SITE;
-    previewTitle.textContent = DEFAULT_PREVIEW_TITLE;
+    previewTitle.textContent = defaultUrl || DEFAULT_CURRENT_URL_TEXT;
     previewDescription.textContent = DEFAULT_PREVIEW_DESCRIPTION;
     previewUrl.textContent = defaultUrl || DEFAULT_CURRENT_URL_TEXT;
     previewLabel.textContent = DEFAULT_PREVIEW_LABEL;
@@ -93,9 +92,11 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const renderPreview = (entry) => {
-    previewSite.textContent = entry.siteName || entry.host || DEFAULT_PREVIEW_SITE;
-    previewTitle.textContent = entry.title || entry.label || entry.url;
-    previewDescription.textContent = entry.description || DEFAULT_PREVIEW_NOTE;
+    previewSite.textContent = entry.host ? `Destination: ${entry.host}` : DEFAULT_PREVIEW_SITE;
+    previewTitle.textContent = entry.url || DEFAULT_CURRENT_URL_TEXT;
+    previewDescription.textContent = entry.title && entry.title !== entry.url
+      ? `Page title: ${entry.title}`
+      : entry.description || DEFAULT_PREVIEW_NOTE;
     previewUrl.textContent = entry.url || DEFAULT_CURRENT_URL_TEXT;
     previewLabel.textContent = entry.rawLabel ? `Picked via: ${entry.rawLabel}` : "Picked via: unlabeled link";
     setPreviewLinkState(entry.url);
@@ -137,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const anchor = document.createElement("a");
       anchor.href = entry.url;
-      anchor.textContent = entry.title || entry.label || entry.url;
+      anchor.textContent = entry.url;
       anchor.target = "_blank";
       anchor.rel = "noopener noreferrer";
 
@@ -587,17 +588,18 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error("Missing URL.");
     }
 
-    const normalizedUrl = new URL(url).toString();
+    const rawUrl = String(url).trim();
+    const parsedUrl = new URL(rawUrl);
     const trimmedLabel = label ? label.replace(/\s+/g, " ").trim() : "";
     const trimmedTitle = title ? title.replace(/\s+/g, " ").trim() : "";
     const trimmedDescription = description ? description.replace(/\s+/g, " ").trim() : "";
-    const parsedHost = new URL(normalizedUrl).host;
+    const parsedHost = parsedUrl.host;
 
     return {
-      url: normalizedUrl,
+      url: rawUrl,
       rawLabel: trimmedLabel,
-      label: trimmedLabel || trimmedTitle || normalizedUrl,
-      title: trimmedTitle || trimmedLabel || normalizedUrl,
+      label: trimmedLabel || trimmedTitle || rawUrl,
+      title: trimmedTitle || trimmedLabel || rawUrl,
       description: trimmedDescription || DEFAULT_PREVIEW_NOTE,
       siteName: siteName ? siteName.replace(/\s+/g, " ").trim() : parsedHost,
       host: host ? host.replace(/\s+/g, " ").trim() : parsedHost,

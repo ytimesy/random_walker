@@ -595,10 +595,12 @@ body::before {
 
 .walker-preview-title {
   margin: 0.75rem 0 0;
-  font-family: var(--walker-font-display);
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-  line-height: 1.08;
-  color: #6b314f;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  line-height: 1.45;
+  color: #3c4354;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .walker-preview-description {
