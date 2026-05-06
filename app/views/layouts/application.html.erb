@@ -9,10 +9,12 @@
 
     <%= yield :head %>
 
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <% icon_version = "rabbit-20260507" %>
+    <link rel="manifest" href="/manifest.json?v=<%= icon_version %>">
+    <link rel="icon" href="/icon.svg?v=<%= icon_version %>" type="image/svg+xml" sizes="any">
+    <link rel="icon" href="/icon.png?v=<%= icon_version %>" type="image/png" sizes="512x512">
+    <link rel="shortcut icon" href="/favicon.ico?v=<%= icon_version %>">
+    <link rel="apple-touch-icon" href="/icon.png?v=<%= icon_version %>">
     <%= stylesheet_link_tag "application" %>
     <%= javascript_importmap_tags %>
   </head>
