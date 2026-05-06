@@ -604,7 +604,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!savedTrails.length) {
       const empty = document.createElement("li");
       empty.className = "walker-saved-empty";
-      empty.textContent = "Save a trail to keep your cutest discoveries around.";
+      empty.textContent = "Save a trail to keep useful routes.";
       savedList.appendChild(empty);
       return;
     }

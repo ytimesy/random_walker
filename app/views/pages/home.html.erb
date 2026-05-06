@@ -1,99 +1,88 @@
-<% content_for :title, "Random Walker | Internet wandering with research reports" %>
+<% content_for :title, "Random Walker | Research-ready web wandering" %>
 <% content_for :head do %>
-  <meta name="description" content="Random Walker is a discovery app for guided internet wandering, with local trail saving, Markdown research reports, JSON export, and public-safe launch controls.">
+  <meta name="description" content="Random Walker is a compact discovery app for guided internet wandering, local trail saving, Markdown research reports, and JSON export.">
 <% end %>
 
 <div class="walker-shell">
-  <div class="walker-bg walker-bg-left" aria-hidden="true"></div>
-  <div class="walker-bg walker-bg-right" aria-hidden="true"></div>
-
-  <header class="walker-hero">
-    <div class="walker-hero-copy">
-      <div class="walker-hero-body">
-        <div class="walker-hero-story">
-          <p class="walker-kicker">Dreamy Internet Drift</p>
-          <h1>Random Walker</h1>
-          <p class="walker-lead">
-            かわいく、きまぐれに、リンクの海をおさんぽするためのランダム・ブラウジングルーム。
-          </p>
-
-          <div class="walker-charms" aria-hidden="true">
-            <span>りぼんモード</span>
-            <span>スイートクリック</span>
-            <span>ラッキージャンプ</span>
-          </div>
-        </div>
-
-        <figure class="walker-mascot-card">
-          <p class="walker-mascot-quote">今日はどこへ飛ぶ?</p>
-          <%= image_tag "moe-walker-chan.svg", class: "walker-mascot-image", alt: "Random Walker の自作マスコットイラスト" %>
-          <figcaption class="walker-mascot-copy">
-            <strong>Walker-chan</strong>
-            <span>Ribbon guide for your lucky jump.</span>
-          </figcaption>
-        </figure>
-      </div>
+  <header class="walker-topbar">
+    <div>
+      <p class="walker-kicker">Research Walker</p>
+      <h1>Random Walker</h1>
     </div>
+    <nav class="walker-topbar-links" aria-label="Primary">
+      <%= link_to "Privacy", privacy_path %>
+      <%= link_to "Terms", terms_path %>
+      <%= mail_to @contact_email, "Contact" %>
+    </nav>
+  </header>
 
-    <div class="walker-panel">
-      <div class="walker-panel-badge">Moe Moe Navigator</div>
+  <main class="walker-app-grid">
+    <section class="walker-panel" aria-label="Walker controls">
       <form id="walker-start-form" class="walker-start" autocomplete="off">
-        <label for="walker-start-url">Start from this URL</label>
+        <label for="walker-start-url">Start URL</label>
         <div class="walker-start-fields">
           <input type="url" id="walker-start-url" name="start_url" placeholder="https://example.com" value="<%= @initial_url %>" required inputmode="url">
           <button type="submit">Set</button>
         </div>
       </form>
+
       <div class="walker-controls">
         <button type="button" id="walker-next">1 Walk</button>
         <button type="button" id="walker-stop" disabled>Stop</button>
-        <button type="button" id="walker-auto" aria-pressed="false">Auto walk</button>
+        <button type="button" id="walker-auto" aria-pressed="false">Auto</button>
       </div>
+
       <div class="walker-trail-actions">
         <button type="button" id="walker-save-trail" disabled>Save trail</button>
         <button type="button" id="walker-export-trail" disabled>Export JSON</button>
       </div>
+
       <section class="walker-research-panel" aria-labelledby="walker-research-title">
-        <div class="walker-research-heading">
-          <div>
-            <p class="walker-card-kicker">Research Mode</p>
-            <h2 id="walker-research-title">Trail Report</h2>
-          </div>
+        <div class="walker-section-header">
+          <p class="walker-card-kicker">Research Mode</p>
+          <h2 id="walker-research-title">Trail Report</h2>
         </div>
+
         <form id="walker-research-form" class="walker-research-form" autocomplete="off">
           <label for="walker-research-topic">Research topic</label>
           <div class="walker-research-fields">
             <input type="text" id="walker-research-topic" name="research_topic" placeholder="例: Rails 個人開発の収益化">
-            <button type="submit">Set topic</button>
+            <button type="submit">Set</button>
           </div>
         </form>
+
         <p id="walker-research-summary" class="walker-research-summary">Set a topic to turn this walk into a report.</p>
+
         <div class="walker-research-status-actions" aria-label="Research decision">
           <button type="button" id="walker-research-keep" data-research-status="keep" disabled>Keep</button>
           <button type="button" id="walker-research-later" data-research-status="later" disabled>Later</button>
           <button type="button" id="walker-research-skip" data-research-status="skip" disabled>Skip</button>
         </div>
+
         <label class="walker-research-note-label" for="walker-research-note">Current page note</label>
-        <textarea id="walker-research-note" class="walker-research-note" rows="4" placeholder="このページから使える示唆、引用候補、次に調べることを書く" disabled></textarea>
+        <textarea id="walker-research-note" class="walker-research-note" rows="4" placeholder="使える示唆、引用候補、次に調べることを書く" disabled></textarea>
+
         <div class="walker-research-export-actions">
           <button type="button" id="walker-export-markdown" disabled>Export Markdown</button>
           <button type="button" id="walker-copy-markdown" disabled>Copy Report</button>
         </div>
       </section>
-      <div class="walker-mode-strip">
+
+      <section class="walker-mode-panel" aria-label="Walk modes">
         <button type="button" id="walker-ribbon-toggle" class="walker-ribbon-toggle" aria-pressed="false">
-          <span class="walker-ribbon-toggle-kicker">りぼんモード</span>
-          <span id="walker-ribbon-summary" class="walker-ribbon-summary">同じサイト内と、ラベル付きリンクを優先します。</span>
+          <span class="walker-mode-name">同一サイト</span>
+          <span id="walker-ribbon-summary" class="walker-mode-summary">同じサイト内と、ラベル付きリンクを優先します。</span>
         </button>
         <button type="button" id="walker-sweet-toggle" class="walker-sweet-toggle" aria-pressed="false">
-          <span class="walker-sweet-toggle-kicker">スイートクリック</span>
-          <span id="walker-sweet-summary" class="walker-sweet-summary">読みやすくて気持ちいいリンクを優先します。</span>
+          <span class="walker-mode-name">読みやすさ</span>
+          <span id="walker-sweet-summary" class="walker-mode-summary">読みやすいリンクを優先します。</span>
         </button>
         <button type="button" id="walker-lucky-toggle" class="walker-lucky-toggle" aria-pressed="false">
-          <span class="walker-lucky-toggle-kicker">ラッキージャンプ</span>
-          <span id="walker-lucky-summary" class="walker-lucky-summary">ときどき大胆に別ドメインへ飛びます。</span>
+          <span class="walker-mode-name">別ドメイン</span>
+          <span id="walker-lucky-summary" class="walker-mode-summary">ときどき別ドメインへ飛びます。</span>
         </button>
-      </div>
+      </section>
+
       <div class="walker-header-meta">
         <p id="walker-status" class="walker-status" role="status" aria-live="polite">Press "1 Walk" to begin wandering.</p>
         <p class="walker-current-url" aria-live="polite">
@@ -101,112 +90,76 @@
           <span id="walker-current-url" class="walker-current-url-value">No page loaded.</span>
         </p>
       </div>
-    </div>
-  </header>
+    </section>
 
-  <main class="walker-main">
     <section class="walker-view-card">
-      <div class="walker-view-card-header">
-        <div>
-          <p class="walker-card-kicker">Safe Preview</p>
-          <h2>Discovery Card</h2>
-        </div>
-        <div class="walker-lights" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="walker-section-header">
+        <p class="walker-card-kicker">Safe Preview</p>
+        <h2>Destination URL</h2>
       </div>
-      <div class="walker-view">
-        <article class="walker-preview-card" id="walker-preview-card">
+
+      <article class="walker-preview-card" id="walker-preview-card">
+        <div class="walker-preview-heading">
           <p class="walker-preview-site" id="walker-preview-site">Destination URL</p>
           <h3 class="walker-preview-title" id="walker-preview-title"><%= @initial_url %></h3>
-          <p class="walker-preview-description" id="walker-preview-description">Random Walker now shows a short discovery preview and sends you to the original site in a new tab.</p>
-          <div class="walker-preview-frame-shell">
-            <iframe
-              id="walker-preview-frame"
-              class="walker-preview-frame"
-              title="Destination page"
-              src="<%= walk_preview_path(url: @initial_url) %>"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts"></iframe>
-          </div>
-          <dl class="walker-preview-meta">
-            <div><dt>Destination URL</dt><dd id="walker-preview-url"><%= @initial_url %></dd></div>
-            <div><dt>Trail Label</dt><dd id="walker-preview-label">A selected link will show up here.</dd></div>
-          </dl>
-          <div class="walker-preview-actions">
-            <a href="#" id="walker-preview-link" class="walker-cta-link is-disabled" target="_blank" rel="noopener noreferrer" aria-disabled="true">Open original page</a>
-            <p class="walker-preview-note">Some sites block embedded display. Open the original page when the frame is blank.</p>
-          </div>
-        </article>
-      </div>
+          <p class="walker-preview-description" id="walker-preview-description">Random Walker shows a safe embedded preview and keeps the original site one click away.</p>
+        </div>
+
+        <div class="walker-preview-frame-shell">
+          <iframe
+            id="walker-preview-frame"
+            class="walker-preview-frame"
+            title="Destination page"
+            src="<%= walk_preview_path(url: @initial_url) %>"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+            sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts"></iframe>
+        </div>
+
+        <dl class="walker-preview-meta">
+          <div><dt>Destination URL</dt><dd id="walker-preview-url"><%= @initial_url %></dd></div>
+          <div><dt>Trail Label</dt><dd id="walker-preview-label">A selected link will show up here.</dd></div>
+        </dl>
+
+        <div class="walker-preview-actions">
+          <a href="#" id="walker-preview-link" class="walker-cta-link is-disabled" target="_blank" rel="noopener noreferrer" aria-disabled="true">Open original page</a>
+          <p class="walker-preview-note">Some sites block embedded display. Use the original page link when the frame is blank.</p>
+        </div>
+      </article>
     </section>
 
     <aside class="walker-history" aria-label="Visited URLs">
-      <div class="walker-history-header">
-        <p class="walker-card-kicker">Trail Log</p>
-        <h2>History</h2>
-      </div>
-      <p class="walker-history-note">おさんぽの足あとをここにストックします。</p>
-      <ol id="walker-history-list"></ol>
+      <section class="walker-history-section">
+        <div class="walker-section-header">
+          <p class="walker-card-kicker">Trail Log</p>
+          <h2>History</h2>
+        </div>
+        <p class="walker-history-note">訪問したURLをここに残します。</p>
+        <ol id="walker-history-list"></ol>
+      </section>
+
       <section class="walker-research-section" aria-labelledby="walker-research-brief-title">
-        <div class="walker-history-header walker-saved-header">
-          <div>
-            <p class="walker-card-kicker">Research Brief</p>
-            <h2 id="walker-research-brief-title">Report Items</h2>
-          </div>
+        <div class="walker-section-header">
+          <p class="walker-card-kicker">Research Brief</p>
+          <h2 id="walker-research-brief-title">Report Items</h2>
         </div>
         <p id="walker-research-brief" class="walker-history-note">Set a topic and keep useful pages to build a Markdown report.</p>
         <ul id="walker-research-list" class="walker-research-list"></ul>
       </section>
+
       <section class="walker-saved-section" aria-labelledby="walker-saved-title">
-        <div class="walker-history-header walker-saved-header">
-          <div>
-            <p class="walker-card-kicker">Saved Routes</p>
-            <h2 id="walker-saved-title">Saved Trails</h2>
-          </div>
+        <div class="walker-section-header">
+          <p class="walker-card-kicker">Saved Routes</p>
+          <h2 id="walker-saved-title">Saved Trails</h2>
         </div>
-        <p class="walker-history-note">保存済みルートはこのブラウザに残ります。ロード、再訪、JSON書き出しに使えます。</p>
+        <p class="walker-history-note">Keep trails in this browser. ロード、再訪、JSON書き出しに使えます。</p>
         <ul id="walker-saved-list" class="walker-saved-list"></ul>
       </section>
     </aside>
   </main>
 
-  <section class="walker-launch-grid" aria-label="Launch plan">
-    <article class="walker-launch-card">
-      <p class="walker-card-kicker">Public Launch</p>
-      <h2>Ship in curated mode first</h2>
-      <p>一般公開の初期段階では、自由入力よりも公開先ドメインを絞る方が現実的です。まずは事故らない公開運用を作ります。</p>
-      <% if @launch_domains.any? %>
-        <p class="walker-launch-inline-label">Current allowlist</p>
-        <ul class="walker-inline-list">
-          <% @launch_domains.each do |domain| %>
-            <li><%= domain %></li>
-          <% end %>
-        </ul>
-      <% else %>
-        <p class="walker-launch-note">`RANDOM_WALKER_ALLOWED_HOSTS` を設定すると、公開モードを curated destinations にできます。</p>
-      <% end %>
-    </article>
-    <article class="walker-launch-card">
-      <p class="walker-card-kicker">Local First</p>
-      <h2>Keep trails in this browser</h2>
-      <p>保存したルート、調査メモ、レポート用の判定はこのブラウザの localStorage にだけ残します。必要なときは Markdown または JSON で持ち出せます。</p>
-    </article>
-    <article class="walker-launch-card">
-      <p class="walker-card-kicker">Trust</p>
-      <h2>Keep the product simple</h2>
-      <p>課金も会員登録も持たず、公開に必要な安全制御、プライバシー、利用規約、問い合わせ導線に集中します。</p>
-      <div class="walker-link-row">
-        <%= link_to "Privacy", privacy_path, class: "walker-text-link" %>
-        <%= link_to "Terms", terms_path, class: "walker-text-link" %>
-      </div>
-    </article>
-  </section>
-
   <footer class="walker-site-footer">
-    <div>
-      <p class="walker-footer-title">Random Walker</p>
-      <p class="walker-footer-copy">Cute discovery app, built to stay simple and local-first.</p>
-    </div>
+    <p class="walker-footer-title">Random Walker</p>
     <nav class="walker-footer-links" aria-label="Footer">
       <%= link_to "Privacy", privacy_path %>
       <%= link_to "Terms", terms_path %>
