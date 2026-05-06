@@ -91,13 +91,23 @@
           <p class="walker-preview-site" id="walker-preview-site">Destination URL</p>
           <h3 class="walker-preview-title" id="walker-preview-title"><%= @initial_url %></h3>
           <p class="walker-preview-description" id="walker-preview-description">Random Walker now shows a short discovery preview and sends you to the original site in a new tab.</p>
+          <div class="walker-preview-frame-shell">
+            <iframe
+              id="walker-preview-frame"
+              class="walker-preview-frame"
+              title="Destination page"
+              src="<%= walk_preview_path(url: @initial_url) %>"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts"></iframe>
+          </div>
           <dl class="walker-preview-meta">
             <div><dt>Destination URL</dt><dd id="walker-preview-url"><%= @initial_url %></dd></div>
             <div><dt>Trail Label</dt><dd id="walker-preview-label">A selected link will show up here.</dd></div>
           </dl>
           <div class="walker-preview-actions">
             <a href="#" id="walker-preview-link" class="walker-cta-link is-disabled" target="_blank" rel="noopener noreferrer" aria-disabled="true">Open original page</a>
-            <p class="walker-preview-note">Preview only. Open the source page in a new tab to continue the walk.</p>
+            <p class="walker-preview-note">Some sites block embedded display. Open the original page when the frame is blank.</p>
           </div>
         </article>
       </div>

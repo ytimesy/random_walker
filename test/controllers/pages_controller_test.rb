@@ -6,6 +6,8 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "Random Walker", response.body
     assert_match "Destination URL", response.body
+    assert_match "walker-preview-frame", response.body
+    assert_match "/walk/preview", response.body
     assert_match "Saved Trails", response.body
     assert_match "Keep trails in this browser", response.body
     refute_match "Become a supporter", response.body

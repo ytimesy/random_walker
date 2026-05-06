@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const previewUrl = document.getElementById("walker-preview-url");
   const previewLabel = document.getElementById("walker-preview-label");
   const previewLink = document.getElementById("walker-preview-link");
+  const previewFrame = document.getElementById("walker-preview-frame");
   const nextButton = document.getElementById("walker-next");
   const backButton = document.getElementById("walker-back");
   const stopButton = document.getElementById("walker-stop");
@@ -57,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
     !previewUrl ||
     !previewLabel ||
     !previewLink ||
+    !previewFrame ||
     !nextButton ||
     !saveTrailButton ||
     !exportTrailButton ||
@@ -82,6 +84,16 @@ document.addEventListener("DOMContentLoaded", () => {
     previewLink.href = hasUrl ? url : "#";
   };
 
+  const setPreviewFrameState = (url) => {
+    if (!url) {
+      previewFrame.src = "about:blank";
+      return;
+    }
+
+    const params = new URLSearchParams({ url });
+    previewFrame.src = `/walk/preview?${params.toString()}`;
+  };
+
   const resetPreview = () => {
     previewSite.textContent = DEFAULT_PREVIEW_SITE;
     previewTitle.textContent = defaultUrl || DEFAULT_CURRENT_URL_TEXT;
@@ -89,6 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     previewUrl.textContent = defaultUrl || DEFAULT_CURRENT_URL_TEXT;
     previewLabel.textContent = DEFAULT_PREVIEW_LABEL;
     setPreviewLinkState(defaultUrl);
+    setPreviewFrameState(defaultUrl);
   };
 
   const renderPreview = (entry) => {
@@ -100,6 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
     previewUrl.textContent = entry.url || DEFAULT_CURRENT_URL_TEXT;
     previewLabel.textContent = entry.rawLabel ? `Picked via: ${entry.rawLabel}` : "Picked via: unlabeled link";
     setPreviewLinkState(entry.url);
+    setPreviewFrameState(entry.url);
   };
 
   const annotateHistoryError = (index, message) => {

@@ -199,6 +199,25 @@ class WalksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "renders proxied destination preview html" do
+    renderer = Object.new
+    renderer.define_singleton_method(:html) do
+      "<!doctype html><html><body>Destination body</body></html>"
+    end
+
+    RandomWalker::PageFrame.stub(:new, ->(url:) {
+      assert_equal "https://example.com/page", url
+      renderer
+    }) do
+      get walk_preview_url, params: { url: "https://example.com/page" }
+    end
+
+    assert_response :success
+    assert_equal "text/html", response.media_type
+    assert_match "Destination body", response.body
+    assert_match "sandbox", response.headers["Content-Security-Policy"]
+  end
+
   private
 
   def build_link(url:, label: nil, title: "Preview title", description: "Preview description", site_name: nil, host: nil)
