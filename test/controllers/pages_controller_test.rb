@@ -10,6 +10,7 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_match "/walk/preview", response.body
     assert_match "Research Mode", response.body
     assert_match "Export Markdown", response.body
+    assert_match "Import JSON", response.body
     assert_match "Report Items", response.body
     assert_match "Saved Trails", response.body
     assert_match "Keep trails in this browser", response.body

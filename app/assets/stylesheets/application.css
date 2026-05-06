@@ -238,6 +238,10 @@ a {
   margin-top: 0.5rem;
 }
 
+.walker-file-input {
+  display: none;
+}
+
 .walker-start button,
 .walker-controls button,
 .walker-trail-actions button,

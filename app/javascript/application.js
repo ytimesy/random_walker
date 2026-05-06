@@ -29,6 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const stopButton = document.getElementById("walker-stop");
   const saveTrailButton = document.getElementById("walker-save-trail");
   const exportTrailButton = document.getElementById("walker-export-trail");
+  const importTrailButton = document.getElementById("walker-import-trail");
+  const importTrailInput = document.getElementById("walker-import-trail-file");
   const researchForm = document.getElementById("walker-research-form");
   const researchTopicInput = document.getElementById("walker-research-topic");
   const researchSummary = document.getElementById("walker-research-summary");
@@ -80,6 +82,8 @@ document.addEventListener("DOMContentLoaded", () => {
     !nextButton ||
     !saveTrailButton ||
     !exportTrailButton ||
+    !importTrailButton ||
+    !importTrailInput ||
     !researchForm ||
     !researchTopicInput ||
     !researchSummary ||
@@ -381,6 +385,18 @@ document.addEventListener("DOMContentLoaded", () => {
       : [];
   };
 
+  const normalizeOptionalUrl = (value, fallback) => {
+    if (typeof value !== "string" || !value.trim()) {
+      return fallback;
+    }
+
+    try {
+      return new URL(value.trim()).toString();
+    } catch (error) {
+      return fallback;
+    }
+  };
+
   const deriveTrailName = () => {
     const activeEntry = position >= 0 ? history[position] : null;
 
@@ -399,6 +415,20 @@ document.addEventListener("DOMContentLoaded", () => {
     return "Untitled trail";
   };
 
+  const snapshotTrailEntries = (entries) => {
+    return entries.map((entry) => ({
+      url: entry.url,
+      label: entry.rawLabel || entry.label,
+      title: entry.title,
+      description: entry.description,
+      siteName: entry.siteName,
+      host: entry.host,
+      error: entry.error || "",
+      researchStatus: normalizeResearchStatus(entry.researchStatus),
+      researchNote: entry.researchNote || ""
+    }));
+  };
+
   const buildTrailSnapshot = ({ name = deriveTrailName() } = {}) => {
     if (!history.length) {
       return null;
@@ -413,17 +443,46 @@ document.addEventListener("DOMContentLoaded", () => {
       startUrl: defaultUrl,
       researchTopic,
       position,
-      entries: history.map((entry) => ({
-        url: entry.url,
-        label: entry.rawLabel || entry.label,
-        title: entry.title,
-        description: entry.description,
-        siteName: entry.siteName,
-        host: entry.host,
-        error: entry.error || "",
-        researchStatus: normalizeResearchStatus(entry.researchStatus),
-        researchNote: entry.researchNote || ""
-      }))
+      entries: snapshotTrailEntries(history)
+    };
+  };
+
+  const normalizeImportedTrail = (value) => {
+    const importedTrail = Array.isArray(value) ? value[0] : value;
+    if (!importedTrail || typeof importedTrail !== "object") {
+      throw new Error("Select a Random Walker trail JSON file.");
+    }
+
+    const importedTopic = typeof importedTrail.researchTopic === "string"
+      ? importedTrail.researchTopic.trim()
+      : "";
+    const previousTopic = researchTopic;
+    researchTopic = importedTopic || researchTopic;
+
+    let entries = [];
+    try {
+      entries = normalizeTrailEntries(importedTrail.entries);
+    } finally {
+      researchTopic = previousTopic;
+    }
+
+    if (!entries.length) {
+      throw new Error("That JSON file does not contain trail entries.");
+    }
+
+    const importedName = typeof importedTrail.name === "string" ? importedTrail.name.trim() : "";
+    const fallbackName = entries[0]?.siteName ? `${entries[0].siteName} trail` : "Imported trail";
+    const importedPosition = Number.isInteger(importedTrail.position) ? importedTrail.position : entries.length - 1;
+    const positionIndex = Math.min(Math.max(importedPosition, 0), entries.length - 1);
+
+    return {
+      id: `trail-${Date.now()}`,
+      name: importedName || fallbackName,
+      savedAt: new Date().toISOString(),
+      startUrl: normalizeOptionalUrl(importedTrail.startUrl, entries[0].url),
+      researchTopic: importedTopic,
+      position: positionIndex,
+      entries: snapshotTrailEntries(entries)
     };
   };
 
@@ -840,6 +899,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     downloadTrail(snapshot);
     setStatus("Current trail exported as JSON.", { type: "success" });
+  };
+
+  const importTrailFromFile = async (file) => {
+    if (!file) {
+      return;
+    }
+
+    try {
+      const rawText = await file.text();
+      const parsed = JSON.parse(rawText);
+      const importedTrail = normalizeImportedTrail(parsed);
+
+      savedTrails = [
+        importedTrail,
+        ...savedTrails.filter((trail) => trail.id !== importedTrail.id)
+      ].slice(0, MAX_SAVED_TRAILS);
+
+      if (!persistSavedTrails()) {
+        return;
+      }
+
+      renderSavedTrails();
+      loadTrail(importedTrail);
+      setStatus(`Imported trail: ${importedTrail.name}`, { type: "success" });
+    } catch (error) {
+      setStatus(error.message || "Could not import that trail JSON.", { type: "error" });
+    } finally {
+      importTrailInput.value = "";
+    }
   };
 
   const readStoredRibbonMode = () => {
@@ -1294,6 +1382,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   exportTrailButton.addEventListener("click", () => {
     exportCurrentTrail();
+  });
+
+  importTrailButton.addEventListener("click", () => {
+    importTrailInput.click();
+  });
+
+  importTrailInput.addEventListener("change", () => {
+    importTrailFromFile(importTrailInput.files?.[0]);
   });
 
   researchForm.addEventListener("submit", (event) => {
