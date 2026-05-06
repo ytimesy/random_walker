@@ -1,6 +1,6 @@
-<% content_for :title, "Random Walker | Cute internet wandering that can actually ship" %>
+<% content_for :title, "Random Walker | Internet wandering with research reports" %>
 <% content_for :head do %>
-  <meta name="description" content="Random Walker is a cute discovery app for guided internet wandering, with local trail saving, JSON export, and public-safe launch controls.">
+  <meta name="description" content="Random Walker is a discovery app for guided internet wandering, with local trail saving, Markdown research reports, JSON export, and public-safe launch controls.">
 <% end %>
 
 <div class="walker-shell">
@@ -53,6 +53,33 @@
         <button type="button" id="walker-save-trail" disabled>Save trail</button>
         <button type="button" id="walker-export-trail" disabled>Export JSON</button>
       </div>
+      <section class="walker-research-panel" aria-labelledby="walker-research-title">
+        <div class="walker-research-heading">
+          <div>
+            <p class="walker-card-kicker">Research Mode</p>
+            <h2 id="walker-research-title">Trail Report</h2>
+          </div>
+        </div>
+        <form id="walker-research-form" class="walker-research-form" autocomplete="off">
+          <label for="walker-research-topic">Research topic</label>
+          <div class="walker-research-fields">
+            <input type="text" id="walker-research-topic" name="research_topic" placeholder="例: Rails 個人開発の収益化">
+            <button type="submit">Set topic</button>
+          </div>
+        </form>
+        <p id="walker-research-summary" class="walker-research-summary">Set a topic to turn this walk into a report.</p>
+        <div class="walker-research-status-actions" aria-label="Research decision">
+          <button type="button" id="walker-research-keep" data-research-status="keep" disabled>Keep</button>
+          <button type="button" id="walker-research-later" data-research-status="later" disabled>Later</button>
+          <button type="button" id="walker-research-skip" data-research-status="skip" disabled>Skip</button>
+        </div>
+        <label class="walker-research-note-label" for="walker-research-note">Current page note</label>
+        <textarea id="walker-research-note" class="walker-research-note" rows="4" placeholder="このページから使える示唆、引用候補、次に調べることを書く" disabled></textarea>
+        <div class="walker-research-export-actions">
+          <button type="button" id="walker-export-markdown" disabled>Export Markdown</button>
+          <button type="button" id="walker-copy-markdown" disabled>Copy Report</button>
+        </div>
+      </section>
       <div class="walker-mode-strip">
         <button type="button" id="walker-ribbon-toggle" class="walker-ribbon-toggle" aria-pressed="false">
           <span class="walker-ribbon-toggle-kicker">りぼんモード</span>
@@ -120,6 +147,16 @@
       </div>
       <p class="walker-history-note">おさんぽの足あとをここにストックします。</p>
       <ol id="walker-history-list"></ol>
+      <section class="walker-research-section" aria-labelledby="walker-research-brief-title">
+        <div class="walker-history-header walker-saved-header">
+          <div>
+            <p class="walker-card-kicker">Research Brief</p>
+            <h2 id="walker-research-brief-title">Report Items</h2>
+          </div>
+        </div>
+        <p id="walker-research-brief" class="walker-history-note">Set a topic and keep useful pages to build a Markdown report.</p>
+        <ul id="walker-research-list" class="walker-research-list"></ul>
+      </section>
       <section class="walker-saved-section" aria-labelledby="walker-saved-title">
         <div class="walker-history-header walker-saved-header">
           <div>
@@ -152,7 +189,7 @@
     <article class="walker-launch-card">
       <p class="walker-card-kicker">Local First</p>
       <h2>Keep trails in this browser</h2>
-      <p>保存したルートはこのブラウザの localStorage にだけ残します。アカウント登録やクラウド同期は使わず、必要なときは JSON エクスポートで持ち出せます。</p>
+      <p>保存したルート、調査メモ、レポート用の判定はこのブラウザの localStorage にだけ残します。必要なときは Markdown または JSON で持ち出せます。</p>
     </article>
     <article class="walker-launch-card">
       <p class="walker-card-kicker">Trust</p>

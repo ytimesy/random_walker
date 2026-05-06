@@ -6,8 +6,14 @@ const RIBBON_STORAGE_KEY = "randomWalker.ribbonMode";
 const SWEET_STORAGE_KEY = "randomWalker.sweetClick";
 const LUCKY_STORAGE_KEY = "randomWalker.luckyJump";
 const SAVED_TRAILS_STORAGE_KEY = "randomWalker.savedTrails";
+const RESEARCH_TOPIC_STORAGE_KEY = "randomWalker.researchTopic";
 const MAX_VISITED_URLS_SENT = 20;
 const MAX_SAVED_TRAILS = 12;
+const RESEARCH_STATUS_LABELS = {
+  keep: "Keep",
+  later: "Later",
+  skip: "Skip"
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   const previewCard = document.getElementById("walker-preview-card");
@@ -23,6 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const stopButton = document.getElementById("walker-stop");
   const saveTrailButton = document.getElementById("walker-save-trail");
   const exportTrailButton = document.getElementById("walker-export-trail");
+  const researchForm = document.getElementById("walker-research-form");
+  const researchTopicInput = document.getElementById("walker-research-topic");
+  const researchSummary = document.getElementById("walker-research-summary");
+  const researchKeepButton = document.getElementById("walker-research-keep");
+  const researchLaterButton = document.getElementById("walker-research-later");
+  const researchSkipButton = document.getElementById("walker-research-skip");
+  const researchNote = document.getElementById("walker-research-note");
+  const exportMarkdownButton = document.getElementById("walker-export-markdown");
+  const copyMarkdownButton = document.getElementById("walker-copy-markdown");
+  const researchBrief = document.getElementById("walker-research-brief");
+  const researchList = document.getElementById("walker-research-list");
   const status = document.getElementById("walker-status");
   const historyList = document.getElementById("walker-history-list");
   const savedList = document.getElementById("walker-saved-list");
@@ -49,6 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let ribbonMode = false;
   let sweetClickMode = false;
   let luckyJumpMode = false;
+  let researchTopic = "";
 
   if (
     !previewCard ||
@@ -62,6 +80,17 @@ document.addEventListener("DOMContentLoaded", () => {
     !nextButton ||
     !saveTrailButton ||
     !exportTrailButton ||
+    !researchForm ||
+    !researchTopicInput ||
+    !researchSummary ||
+    !researchKeepButton ||
+    !researchLaterButton ||
+    !researchSkipButton ||
+    !researchNote ||
+    !exportMarkdownButton ||
+    !copyMarkdownButton ||
+    !researchBrief ||
+    !researchList ||
     !historyList ||
     !savedList ||
     !status ||
@@ -75,6 +104,96 @@ document.addEventListener("DOMContentLoaded", () => {
   let position = -1;
   let savedTrails = [];
 
+  const researchStatusButtons = [researchKeepButton, researchLaterButton, researchSkipButton];
+
+  const currentEntry = () => (position >= 0 && history[position] ? history[position] : null);
+
+  const normalizeResearchStatus = (value) => {
+    return Object.keys(RESEARCH_STATUS_LABELS).includes(value) ? value : "later";
+  };
+
+  const researchTokens = () => {
+    return Array.from(
+      new Set(
+        researchTopic
+          .toLowerCase()
+          .split(/[\s,，、。・／\/|:;!?！？()[\]{}"'`]+/)
+          .map((token) => token.trim())
+          .filter((token) => token.length >= 2)
+      )
+    );
+  };
+
+  const researchHaystack = (entry) => {
+    return [
+      entry?.url,
+      entry?.rawLabel,
+      entry?.label,
+      entry?.title,
+      entry?.description,
+      entry?.siteName,
+      entry?.host
+    ].filter(Boolean).join(" ").toLowerCase();
+  };
+
+  const researchScore = (entry) => {
+    if (!researchTopic || !entry) {
+      return 0;
+    }
+
+    const haystack = researchHaystack(entry);
+    const tokens = researchTokens();
+    if (!tokens.length) {
+      return haystack.includes(researchTopic.toLowerCase()) ? 1 : 0;
+    }
+
+    return tokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
+  };
+
+  const defaultResearchStatus = (entry) => {
+    return researchTopic && researchScore(entry) > 0 ? "keep" : "later";
+  };
+
+  const researchStatusLabel = (entry) => {
+    return RESEARCH_STATUS_LABELS[normalizeResearchStatus(entry?.researchStatus)] || RESEARCH_STATUS_LABELS.later;
+  };
+
+  const markdownTableCell = (value) => {
+    return String(value || "")
+      .replace(/\|/g, "\\|")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const markdownListText = (value) => {
+    return String(value || "")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .trim();
+  };
+
+  const researchStatusCounts = () => {
+    return history.reduce(
+      (counts, entry) => {
+        counts[normalizeResearchStatus(entry.researchStatus)] += 1;
+        return counts;
+      },
+      { keep: 0, later: 0, skip: 0 }
+    );
+  };
+
+  const reportEntries = () => {
+    return history.filter((entry) => normalizeResearchStatus(entry.researchStatus) !== "skip");
+  };
+
+  const slugifyFilenamePart = (value, fallback) => {
+    const slug = String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    return slug || fallback;
+  };
 
   const setPreviewLinkState = (url) => {
     const hasUrl = Boolean(url);
@@ -123,6 +242,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     history[index] = { ...history[index], error: message };
     renderHistory();
+    renderResearchList();
+    updateResearchControls();
   };
 
   const setStatus = (message = "", { type = null } = {}) => {
@@ -157,6 +278,14 @@ document.addEventListener("DOMContentLoaded", () => {
       anchor.rel = "noopener noreferrer";
 
       item.appendChild(anchor);
+
+      if (entry.researchStatus) {
+        const researchBadge = document.createElement("span");
+        researchBadge.className = `walker-history-research-badge is-${normalizeResearchStatus(entry.researchStatus)}`;
+        const score = researchScore(entry);
+        researchBadge.textContent = `${researchStatusLabel(entry)} · ${score} ${score === 1 ? "hit" : "hits"}`;
+        item.appendChild(researchBadge);
+      }
 
       if (entry.error) {
         const errorText = document.createElement("span");
@@ -203,6 +332,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const readStoredResearchTopic = () => {
+    try {
+      return window.localStorage.getItem(RESEARCH_TOPIC_STORAGE_KEY) || "";
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const persistResearchTopic = () => {
+    try {
+      window.localStorage.setItem(RESEARCH_TOPIC_STORAGE_KEY, researchTopic);
+    } catch (error) {
+      // Ignore storage failures in private browsing or restricted contexts.
+    }
+  };
+
+  const setResearchTopic = (value, { announce = true, retagMissing = true } = {}) => {
+    researchTopic = String(value || "").trim();
+    researchTopicInput.value = researchTopic;
+    persistResearchTopic();
+
+    if (retagMissing) {
+      history.forEach((entry) => {
+        if (!entry.researchStatus || (normalizeResearchStatus(entry.researchStatus) === "later" && !entry.researchNote)) {
+          entry.researchStatus = defaultResearchStatus(entry);
+        }
+      });
+    }
+
+    renderHistory();
+    renderResearchList();
+    updateResearchControls();
+
+    if (announce) {
+      setStatus(
+        researchTopic
+          ? `Research topic set: ${researchTopic}`
+          : "Research topic cleared.",
+        { type: "success" }
+      );
+    }
+  };
+
   const normalizeTrailEntries = (entries) => {
     return Array.isArray(entries)
       ? entries.map((entry) => normalizeEntry(entry)).filter(Boolean)
@@ -239,6 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
       name: normalizedName || deriveTrailName(),
       savedAt: new Date().toISOString(),
       startUrl: defaultUrl,
+      researchTopic,
       position,
       entries: history.map((entry) => ({
         url: entry.url,
@@ -247,21 +420,15 @@ document.addEventListener("DOMContentLoaded", () => {
         description: entry.description,
         siteName: entry.siteName,
         host: entry.host,
-        error: entry.error || ""
+        error: entry.error || "",
+        researchStatus: normalizeResearchStatus(entry.researchStatus),
+        researchNote: entry.researchNote || ""
       }))
     };
   };
 
-  const downloadTrail = (trail) => {
-    if (!trail) {
-      return;
-    }
-
-    const filename = `${(trail.name || "random-walker-trail")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "random-walker-trail"}.json`;
-    const blob = new Blob([JSON.stringify(trail, null, 2)], { type: "application/json" });
+  const downloadTextFile = (filename, content, type) => {
+    const blob = new Blob([content], { type });
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = objectUrl;
@@ -272,7 +439,22 @@ document.addEventListener("DOMContentLoaded", () => {
     URL.revokeObjectURL(objectUrl);
   };
 
+  const downloadTrail = (trail) => {
+    if (!trail) {
+      return;
+    }
+
+    const filename = `${slugifyFilenamePart(trail.name, "random-walker-trail")}.json`;
+    downloadTextFile(filename, JSON.stringify(trail, null, 2), "application/json");
+  };
+
   const loadTrail = (trail) => {
+    if (typeof trail?.researchTopic === "string") {
+      researchTopic = trail.researchTopic.trim();
+      researchTopicInput.value = researchTopic;
+      persistResearchTopic();
+    }
+
     const entries = normalizeTrailEntries(trail?.entries);
     if (!entries.length) {
       setStatus("That saved trail is empty.", { type: "error" });
@@ -292,6 +474,128 @@ document.addEventListener("DOMContentLoaded", () => {
     position = Math.min(Math.max(restoredPosition, 0), entries.length - 1);
     showCurrentEntry();
     setStatus(`Loaded saved trail: ${trail.name}`, { type: "success" });
+  };
+
+  const reportFilename = () => {
+    const datePart = new Date().toISOString().slice(0, 10);
+    return `${slugifyFilenamePart(researchTopic || deriveTrailName(), "random-walker-report")}-${datePart}.md`;
+  };
+
+  const markdownHeadingText = (value, fallback) => {
+    const text = markdownListText(value).split("\n")[0]?.replace(/^#+\s*/, "").trim();
+    return text || fallback;
+  };
+
+  const buildMarkdownReport = () => {
+    if (!history.length) {
+      return "";
+    }
+
+    const counts = researchStatusCounts();
+    const usableEntries = reportEntries();
+    const title = markdownHeadingText(researchTopic || deriveTrailName(), "Random Walker Trail Report");
+    const generatedAt = new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date());
+    const lines = [
+      `# ${title}`,
+      "",
+      "## Research Summary",
+      "",
+      `- Generated: ${generatedAt}`,
+      `- Topic: ${researchTopic || "Not set"}`,
+      `- Start URL: ${defaultUrl || DEFAULT_CURRENT_URL_TEXT}`,
+      `- Stops visited: ${history.length}`,
+      `- Report items: ${usableEntries.length}`,
+      `- Keep: ${counts.keep}`,
+      `- Later: ${counts.later}`,
+      `- Skip: ${counts.skip}`,
+      "",
+      "## Findings",
+      ""
+    ];
+
+    if (!usableEntries.length) {
+      lines.push("No report items yet.", "");
+    } else {
+      usableEntries.forEach((entry) => {
+        const statusKey = normalizeResearchStatus(entry.researchStatus);
+        const heading = markdownHeadingText(entry.title || entry.url, "Untitled source");
+        lines.push(`### ${history.indexOf(entry) + 1}. ${heading}`);
+        lines.push("");
+        lines.push(`- Status: ${RESEARCH_STATUS_LABELS[statusKey]}`);
+        lines.push(`- Relevance hits: ${researchScore(entry)}`);
+        lines.push(`- URL: ${entry.url}`);
+
+        if (entry.rawLabel) {
+          lines.push(`- Picked via: ${entry.rawLabel}`);
+        }
+
+        if (entry.description && entry.description !== DEFAULT_PREVIEW_NOTE) {
+          lines.push(`- Preview: ${entry.description}`);
+        }
+
+        if (entry.researchNote) {
+          lines.push("");
+          lines.push("Notes:");
+          lines.push("");
+          lines.push(markdownListText(entry.researchNote));
+        }
+
+        lines.push("");
+      });
+    }
+
+    lines.push("## Source Table");
+    lines.push("");
+    lines.push("| # | Status | Relevance | URL | Title |");
+    lines.push("|---:|---|---:|---|---|");
+    history.forEach((entry, index) => {
+      lines.push([
+        `| ${index + 1}`,
+        markdownTableCell(researchStatusLabel(entry)),
+        researchScore(entry),
+        markdownTableCell(entry.url),
+        `${markdownTableCell(entry.title)} |`
+      ].join(" | "));
+    });
+
+    return `${lines.join("\n").trim()}\n`;
+  };
+
+  const exportMarkdownReport = () => {
+    const report = buildMarkdownReport();
+    if (!report) {
+      setStatus("Walk at least one step before exporting a report.", { type: "error" });
+      return;
+    }
+
+    downloadTextFile(reportFilename(), report, "text/markdown");
+    setStatus("Markdown report exported.", { type: "success" });
+  };
+
+  const copyMarkdownReport = async () => {
+    const report = buildMarkdownReport();
+    if (!report) {
+      setStatus("Walk at least one step before copying a report.", { type: "error" });
+      return;
+    }
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable.");
+      }
+
+      await navigator.clipboard.writeText(report);
+      setStatus("Markdown report copied.", { type: "success" });
+    } catch (error) {
+      downloadTextFile(reportFilename(), report, "text/markdown");
+      setStatus("Clipboard unavailable. Markdown report downloaded instead.", { type: "success" });
+    }
   };
 
   const renderSavedTrails = () => {
@@ -316,7 +620,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const meta = document.createElement("p");
       meta.className = "walker-saved-meta";
-      meta.textContent = `${formatSavedTrailTime(trail.savedAt)} · ${trail.entries?.length || 0} stops`;
+      meta.textContent = [
+        formatSavedTrailTime(trail.savedAt),
+        `${trail.entries?.length || 0} stops`,
+        trail.researchTopic ? `Topic: ${trail.researchTopic}` : null
+      ].filter(Boolean).join(" · ");
       item.appendChild(meta);
 
       const actions = document.createElement("div");
@@ -341,6 +649,124 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const renderResearchList = () => {
+    researchList.innerHTML = "";
+
+    if (!history.length) {
+      researchBrief.textContent = researchTopic
+        ? `Topic: ${researchTopic}. Walk to collect report items.`
+        : "Set a topic and keep useful pages to build a Markdown report.";
+
+      const empty = document.createElement("li");
+      empty.className = "walker-research-empty";
+      empty.textContent = "No report items yet.";
+      researchList.appendChild(empty);
+      return;
+    }
+
+    const usableEntries = reportEntries();
+    researchBrief.textContent = researchTopic
+      ? `Topic: ${researchTopic}. ${usableEntries.length} report items from ${history.length} stops.`
+      : `${usableEntries.length} report items from ${history.length} stops. Add a topic for relevance scoring.`;
+
+    if (!usableEntries.length) {
+      const empty = document.createElement("li");
+      empty.className = "walker-research-empty";
+      empty.textContent = "All stops are marked Skip.";
+      researchList.appendChild(empty);
+      return;
+    }
+
+    usableEntries.forEach((entry) => {
+      const statusKey = normalizeResearchStatus(entry.researchStatus);
+      const item = document.createElement("li");
+      item.className = `walker-research-item is-${statusKey}`;
+      if (entry === currentEntry()) {
+        item.classList.add("is-current");
+      }
+
+      const heading = document.createElement("div");
+      heading.className = "walker-research-item-heading";
+
+      const badge = document.createElement("span");
+      badge.className = `walker-research-badge is-${statusKey}`;
+      const score = researchScore(entry);
+      badge.textContent = `${RESEARCH_STATUS_LABELS[statusKey]} · ${score} ${score === 1 ? "hit" : "hits"}`;
+      heading.appendChild(badge);
+
+      const link = document.createElement("a");
+      link.href = entry.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = entry.title || entry.url;
+      heading.appendChild(link);
+
+      item.appendChild(heading);
+
+      const url = document.createElement("p");
+      url.className = "walker-research-url";
+      url.textContent = entry.url;
+      item.appendChild(url);
+
+      if (entry.researchNote) {
+        const note = document.createElement("p");
+        note.className = "walker-research-item-note";
+        note.textContent = entry.researchNote;
+        item.appendChild(note);
+      }
+
+      researchList.appendChild(item);
+    });
+  };
+
+  const updateResearchControls = () => {
+    const entry = currentEntry();
+    const hasEntry = Boolean(entry);
+    const counts = researchStatusCounts();
+
+    researchStatusButtons.forEach((button) => {
+      const statusKey = normalizeResearchStatus(button.dataset.researchStatus);
+      button.disabled = !hasEntry;
+      button.classList.toggle("is-active", hasEntry && normalizeResearchStatus(entry.researchStatus) === statusKey);
+      button.setAttribute("aria-pressed", String(hasEntry && normalizeResearchStatus(entry.researchStatus) === statusKey));
+    });
+
+    researchNote.disabled = !hasEntry;
+    if (document.activeElement !== researchNote) {
+      researchNote.value = entry?.researchNote || "";
+    }
+
+    exportMarkdownButton.disabled = history.length === 0;
+    copyMarkdownButton.disabled = history.length === 0;
+
+    if (!history.length) {
+      researchSummary.textContent = researchTopic
+        ? `Topic: ${researchTopic} · no stops yet`
+        : "Set a topic to turn this walk into a report.";
+      return;
+    }
+
+    researchSummary.textContent = [
+      researchTopic ? `Topic: ${researchTopic}` : "No topic set",
+      `Keep ${counts.keep}`,
+      `Later ${counts.later}`,
+      `Skip ${counts.skip}`
+    ].join(" · ");
+  };
+
+  const setCurrentResearchStatus = (value) => {
+    const entry = currentEntry();
+    if (!entry) {
+      return;
+    }
+
+    entry.researchStatus = normalizeResearchStatus(value);
+    renderHistory();
+    renderResearchList();
+    updateResearchControls();
+    setStatus(`${researchStatusLabel(entry)} marked for the report.`, { type: "success" });
+  };
+
   const updateControls = () => {
     if (backButton) {
       backButton.disabled = position <= 0;
@@ -349,6 +775,8 @@ document.addEventListener("DOMContentLoaded", () => {
     stopButton.disabled = !autoTimer;
     saveTrailButton.disabled = history.length === 0;
     exportTrailButton.disabled = history.length === 0;
+    exportMarkdownButton.disabled = history.length === 0;
+    copyMarkdownButton.disabled = history.length === 0;
   };
 
   const updateCurrentUrlDisplay = () => {
@@ -375,7 +803,9 @@ document.addEventListener("DOMContentLoaded", () => {
     position = -1;
     resetPreview();
     renderHistory();
+    renderResearchList();
     updateControls();
+    updateResearchControls();
     updateCurrentUrlDisplay();
   };
 
@@ -597,7 +1027,19 @@ document.addEventListener("DOMContentLoaded", () => {
     performStep({ preserveStatus: true });
   };
 
-  const normalizeEntry = ({ url, label, title, description, siteName, host, error }) => {
+  const normalizeEntry = (entryData = {}) => {
+    const {
+      url,
+      label,
+      title,
+      description,
+      siteName,
+      host,
+      error,
+      researchStatus,
+      researchNote
+    } = entryData || {};
+
     if (!url) {
       throw new Error("Missing URL.");
     }
@@ -617,7 +1059,9 @@ document.addEventListener("DOMContentLoaded", () => {
       description: trimmedDescription || DEFAULT_PREVIEW_NOTE,
       siteName: siteName ? siteName.replace(/\s+/g, " ").trim() : parsedHost,
       host: host ? host.replace(/\s+/g, " ").trim() : parsedHost,
-      error: error || ""
+      error: error || "",
+      researchStatus: researchStatus ? normalizeResearchStatus(researchStatus) : defaultResearchStatus(entryData),
+      researchNote: researchNote ? markdownListText(researchNote) : ""
     };
   };
 
@@ -628,7 +1072,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderPreview(history[position]);
     renderHistory();
+    renderResearchList();
     updateControls();
+    updateResearchControls();
     updateCurrentUrlDisplay();
   };
 
@@ -850,6 +1296,35 @@ document.addEventListener("DOMContentLoaded", () => {
     exportCurrentTrail();
   });
 
+  researchForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setResearchTopic(researchTopicInput.value);
+  });
+
+  researchStatusButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setCurrentResearchStatus(button.dataset.researchStatus);
+    });
+  });
+
+  researchNote.addEventListener("input", () => {
+    const entry = currentEntry();
+    if (!entry) {
+      return;
+    }
+
+    entry.researchNote = researchNote.value;
+    renderResearchList();
+  });
+
+  exportMarkdownButton.addEventListener("click", () => {
+    exportMarkdownReport();
+  });
+
+  copyMarkdownButton.addEventListener("click", () => {
+    copyMarkdownReport();
+  });
+
   if (startForm && startInput) {
     startForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -949,10 +1424,14 @@ document.addEventListener("DOMContentLoaded", () => {
   setRibbonMode(readStoredRibbonMode(), { announce: false });
   setSweetClickMode(readStoredSweetClickMode(), { announce: false });
   setLuckyJumpMode(readStoredLuckyJumpMode(), { announce: false });
+  researchTopic = readStoredResearchTopic().trim();
+  researchTopicInput.value = researchTopic;
   savedTrails = readSavedTrails();
   renderSavedTrails();
   resetPreview();
+  renderResearchList();
   updateControls();
+  updateResearchControls();
   updateCurrentUrlDisplay();
   setStatus(status.textContent.trim());
 });
