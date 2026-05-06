@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit
 
-# This app defaults to SQLite on Render. If a stray DATABASE_URL is present,
-# Rails will try to boot the PostgreSQL adapter and fail unless pg is bundled.
-if [ "${RANDOM_WALKER_USE_DATABASE_URL:-0}" != "1" ]; then
-  unset DATABASE_URL
-fi
-
 if [ -z "${SECRET_KEY_BASE:-}" ]; then
   export SECRET_KEY_BASE="$(ruby -rsecurerandom -e 'puts SecureRandom.hex(64)')"
 fi

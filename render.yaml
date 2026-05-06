@@ -21,5 +21,5 @@ services:
         value: https://qiita.com/
       - key: RANDOM_WALKER_ALLOWED_HOSTS
         value: qiita.com
-      - key: RANDOM_WALKER_SUPPORT_EMAIL
+      - key: RANDOM_WALKER_CONTACT_EMAIL
         sync: false

@@ -769,9 +769,6 @@ body::before {
 }
 
 .walker-launch-grid,
-.walker-mission-card,
-.walker-supporter-banner,
-.walker-pricing-section,
 .walker-site-footer,
 .walker-legal-hero,
 .walker-legal-card {
@@ -792,69 +789,15 @@ body::before {
   padding: 1rem;
 }
 
-.walker-mission-card {
-  padding: 1.35rem;
-}
 
-.walker-mission-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.95rem;
-}
 
-.walker-mission-stat {
-  padding: 1.1rem;
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 246, 251, 0.98), rgba(255, 252, 245, 0.95));
-  border: 1px solid rgba(198, 114, 153, 0.16);
-  box-shadow: 0 18px 32px rgba(236, 168, 195, 0.14);
-}
 
-.walker-mission-value {
-  margin: 0.6rem 0 0;
-  font-family: var(--walker-font-display);
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-  color: #5e2c4a;
-}
 
-.walker-mission-note {
-  color: var(--walker-ink-soft);
-  line-height: 1.7;
-}
 
-.walker-supporter-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.3rem;
-}
 
-.walker-supporter-copy {
-  max-width: 42rem;
-}
 
-.walker-supporter-copy h2 {
-  margin: 0;
-  font-family: var(--walker-font-display);
-  font-size: clamp(1.8rem, 4vw, 2.5rem);
-  line-height: 1.04;
-  color: #7d4163;
-}
 
-.walker-supporter-copy p:last-child {
-  margin-bottom: 0;
-  color: var(--walker-ink-soft);
-  line-height: 1.8;
-}
 
-.walker-supporter-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.9rem;
-}
 
 .walker-launch-card {
   padding: 1.2rem;
@@ -884,82 +827,29 @@ body::before {
 }
 
 .walker-inline-list,
-.walker-price-list,
 .walker-legal-list {
   margin: 0;
   padding-left: 1.2rem;
 }
 
 .walker-inline-list li,
-.walker-price-list li,
 .walker-legal-list li {
   margin-bottom: 0.45rem;
   line-height: 1.65;
 }
 
-.walker-launch-note,
-.walker-pricing-note {
+.walker-launch-note {
   color: var(--walker-ink-soft);
 }
 
-.walker-section-heading {
-  max-width: 42rem;
-  margin-bottom: 1.1rem;
-}
 
-.walker-section-heading h2 {
-  margin: 0;
-  font-family: var(--walker-font-display);
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  line-height: 1.02;
-  color: #7d4163;
-}
 
-.walker-section-heading p:last-child {
-  margin-bottom: 0;
-  color: var(--walker-ink-soft);
-  line-height: 1.8;
-}
 
-.walker-pricing-section {
-  padding: 1.4rem;
-}
 
-.walker-pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-}
 
-.walker-price-card {
-  position: relative;
-  padding: 1.3rem;
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(255, 246, 251, 0.98), rgba(255, 252, 245, 0.95));
-  border: 1px solid rgba(198, 114, 153, 0.16);
-  box-shadow: 0 18px 32px rgba(236, 168, 195, 0.14);
-}
 
-.walker-price-card.is-featured {
-  border-color: rgba(255, 108, 171, 0.34);
-  background: linear-gradient(180deg, rgba(255, 234, 244, 0.98), rgba(255, 246, 233, 0.96));
-  transform: translateY(-6px);
-}
 
-.walker-price-badge {
-  display: inline-flex;
-  margin: 0 0 0.9rem;
-  padding: 0.38rem 0.72rem;
-  border-radius: 999px;
-  background: rgba(255, 108, 171, 0.12);
-  color: var(--walker-pink-deep);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 
-.walker-price-name,
 .walker-footer-title {
   margin: 0;
   font-size: 1.2rem;
@@ -967,25 +857,8 @@ body::before {
   color: #85486b;
 }
 
-.walker-price-value {
-  margin: 0.55rem 0 0;
-  font-family: var(--walker-font-display);
-  font-size: 2rem;
-  color: #5e2c4a;
-}
 
-.walker-price-tone {
-  margin: 0.4rem 0 1rem;
-  color: var(--walker-ink-soft);
-}
 
-.walker-pricing-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-}
 
 .walker-cta-link,
 .walker-text-link {
@@ -1086,9 +959,6 @@ body::before {
   line-height: 1.8;
 }
 
-.walker-pricing-page {
-  margin-top: 1.5rem;
-}
 
 @media (max-width: 980px) {
   .walker-hero,
@@ -1096,8 +966,7 @@ body::before {
     grid-template-columns: 1fr;
   }
 
-  .walker-launch-grid,
-  .walker-pricing-grid {
+  .walker-launch-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1114,9 +983,6 @@ body::before {
     max-height: none;
   }
 
-  .walker-price-card.is-featured {
-    transform: none;
-  }
 }
 
 @media (max-width: 640px) {
@@ -1141,7 +1007,6 @@ body::before {
     padding: 1rem;
   }
 
-  .walker-pricing-section,
   .walker-site-footer,
   .walker-legal-hero,
   .walker-legal-card {
@@ -1190,13 +1055,8 @@ body::before {
     grid-template-columns: 1fr;
   }
 
-  .walker-mission-grid {
-    grid-template-columns: 1fr;
-  }
 
-  .walker-pricing-actions,
   .walker-preview-actions,
-  .walker-supporter-actions,
   .walker-saved-actions,
   .walker-site-footer,
   .walker-footer-links {
